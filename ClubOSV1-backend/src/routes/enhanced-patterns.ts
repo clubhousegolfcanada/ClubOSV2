@@ -2300,7 +2300,7 @@ router.get('/clubai-config', authenticate, async (_req: Request, res: Response) 
         ];
         for (const { key, value } of defaults) {
           await db.query(`
-            INSERT INTO pattern_learning_config (config_key, config_value, updated_at)
+            INSERT INTO pattern_learning_config (config_key, config_value, last_updated)
             VALUES ($1, $2, NOW())
             ON CONFLICT (config_key) DO NOTHING
           `, [key, value]);
@@ -2343,9 +2343,9 @@ router.put('/clubai-config', authenticate, async (req: Request, res: Response) =
 
     for (const { key, value } of updates) {
       await db.query(`
-        INSERT INTO pattern_learning_config (config_key, config_value, updated_at)
+        INSERT INTO pattern_learning_config (config_key, config_value, last_updated)
         VALUES ($1, $2, NOW())
-        ON CONFLICT (config_key) DO UPDATE SET config_value = $2, updated_at = NOW()
+        ON CONFLICT (config_key) DO UPDATE SET config_value = $2, last_updated = NOW()
       `, [key, value]);
     }
 
@@ -2414,9 +2414,9 @@ router.put('/clubai-system-prompt', authenticate, async (req: Request, res: Resp
     }
 
     await db.query(`
-      INSERT INTO pattern_learning_config (config_key, config_value, updated_at)
+      INSERT INTO pattern_learning_config (config_key, config_value, last_updated)
       VALUES ('clubai_system_prompt', $1, NOW())
-      ON CONFLICT (config_key) DO UPDATE SET config_value = $1, updated_at = NOW()
+      ON CONFLICT (config_key) DO UPDATE SET config_value = $1, last_updated = NOW()
     `, [prompt.trim()]);
 
     // Clear the in-memory cache so the next generateResponse() picks up the new prompt
