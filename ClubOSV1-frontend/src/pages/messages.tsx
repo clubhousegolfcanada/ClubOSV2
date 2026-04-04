@@ -239,35 +239,47 @@ export default function Messages() {
   const [loadingMoreMessages, setLoadingMoreMessages] = useState(false);
   const remoteActionsBar = useRemoteActionsBar();
   const [keyboardVisible, setKeyboardVisible] = useState(false);
-  
-  // Track keyboard visibility on mobile
+
+  // Track keyboard visibility using visualViewport API (reliable on Android + iOS)
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    
+    if (window.innerWidth >= 768) return; // Desktop doesn't need this
+
+    // Method 1: visualViewport resize (best — detects actual keyboard on Android)
+    const vv = window.visualViewport;
+    let initialHeight = vv?.height || window.innerHeight;
+
+    const handleViewportResize = () => {
+      if (!vv) return;
+      // If viewport shrinks by more than 150px, keyboard is likely open
+      const isKeyboard = initialHeight - vv.height > 150;
+      setKeyboardVisible(isKeyboard);
+    };
+
+    // Method 2: focusin/focusout as fallback for older browsers
     const handleFocus = () => {
       setKeyboardVisible(true);
-      // Ensure input is visible when keyboard appears
-      setTimeout(() => {
-        if (inputRef.current) {
-          inputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, 300);
     };
-    
     const handleBlur = () => {
-      setKeyboardVisible(false);
+      // Delay blur to avoid flicker when tapping between inputs
+      setTimeout(() => {
+        if (!document.activeElement || document.activeElement === document.body) {
+          setKeyboardVisible(false);
+        }
+      }, 100);
     };
-    
-    // Only for mobile
-    if (window.innerWidth < 768) {
-      document.addEventListener('focusin', handleFocus);
-      document.addEventListener('focusout', handleBlur);
-      
-      return () => {
-        document.removeEventListener('focusin', handleFocus);
-        document.removeEventListener('focusout', handleBlur);
-      };
+
+    if (vv) {
+      vv.addEventListener('resize', handleViewportResize);
     }
+    document.addEventListener('focusin', handleFocus);
+    document.addEventListener('focusout', handleBlur);
+
+    return () => {
+      if (vv) vv.removeEventListener('resize', handleViewportResize);
+      document.removeEventListener('focusin', handleFocus);
+      document.removeEventListener('focusout', handleBlur);
+    };
   }, []);
 
   // Check auth
@@ -1500,12 +1512,12 @@ export default function Messages() {
               </div>
 
               {/* Conversation List */}
-              <div 
+              <div
                 ref={messagesContainerRef}
                 className="flex-1 overflow-y-auto"
-                style={{ 
+                style={{
                   WebkitOverflowScrolling: 'touch',
-                  paddingBottom: 'env(safe-area-inset-bottom, 20px)'
+                  paddingBottom: keyboardVisible ? '4px' : 'env(safe-area-inset-bottom, 20px)'
                 }}
               >
                 {/* Removed pull to refresh for better native feel */}
@@ -1619,11 +1631,11 @@ export default function Messages() {
                   </div>
 
                   {/* Messages - Mobile optimized with better spacing */}
-                  <div 
-                    className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 flex flex-col" 
-                    style={{ 
+                  <div
+                    className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 flex flex-col"
+                    style={{
                       WebkitOverflowScrolling: 'touch',
-                      paddingBottom: 'env(safe-area-inset-bottom, 20px)',
+                      paddingBottom: keyboardVisible ? '4px' : 'env(safe-area-inset-bottom, 20px)',
                       overscrollBehavior: 'contain'
                     }}
                   >
@@ -1811,7 +1823,7 @@ export default function Messages() {
                   
                   {/* Message Input - pb-[76px] clears the bottom nav bar, removed when keyboard is open */}
                   <div
-                    className={`flex-shrink-0 border-t border-[var(--border-secondary)] bg-[var(--bg-secondary)] p-3 ${keyboardVisible ? 'pb-3' : 'pb-[76px]'}`}
+                    className={`flex-shrink-0 border-t border-[var(--border-secondary)] bg-[var(--bg-secondary)] p-3 ${keyboardVisible ? 'pb-1' : 'pb-[76px]'}`}
                   >
                     <form
                       onSubmit={(e) => {
