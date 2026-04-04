@@ -542,6 +542,31 @@ router.post('/webhook', async (req: Request, res: Response) => {
           phoneNumber = phoneNumber || 'Unknown';
         }
         
+        // EARLY push notification — fire before heavy processing so it arrives fast
+        // Non-blocking (no await) so it doesn't delay webhook response
+        if (messageDirection === 'inbound' && phoneNumber && phoneNumber !== 'Unknown') {
+          (async () => {
+            try {
+              const users = await db.query(
+                `SELECT id FROM users WHERE role IN ('admin', 'operator', 'support') AND is_active = true`
+              );
+              const userIds = users.rows.map((u: any) => u.id);
+              await notificationService.sendToUsers(userIds, {
+                title: `New message from ${customerName || phoneNumber}`,
+                body: (messageData.body || messageData.text || '').substring(0, 100),
+                icon: '/logo-192.png',
+                badge: '/badge-72.png',
+                tag: `message-${phoneNumber}`,
+                vibrate: [200, 100, 200],
+                requireInteraction: true,
+                data: { type: 'messages', phoneNumber, url: '/messages' }
+              });
+            } catch (earlyNotifErr) {
+              logger.warn('Early push notification failed:', earlyNotifErr);
+            }
+          })();
+        }
+
         // Log what we're about to save
         logger.info('Preparing to save conversation data:', {
           phoneNumber,
@@ -787,47 +812,10 @@ router.post('/webhook', async (req: Request, res: Response) => {
             minutesSinceLastMessage: Math.round(existingConv.rows[0].minutes_since_last_message)
           });
 
-          // Send push notification for inbound messages
-          // FIX: Use our determined direction, not the raw webhook data
+          // Push notification already sent early (before processing) — skip duplicate
+          // Process inbound message safeguards
           if (messageDirection === 'inbound') {
             try {
-              // Get all users with admin, operator, or support roles
-              const users = await db.query(
-                `SELECT id FROM users
-                 WHERE role IN ('admin', 'operator', 'support')
-                 AND is_active = true`
-              );
-
-              const userIds = users.rows.map((u: any) => u.id);
-
-              // Send notification to all eligible users
-              await notificationService.sendToUsers(userIds, {
-                title: `New message from ${customerName}`,
-                body: (messageData.body || messageData.text || '').substring(0, 100) +
-                      (messageData.body?.length > 100 ? '...' : ''),
-                icon: '/logo-192.png',
-                badge: '/badge-72.png',
-                tag: `message-${phoneNumber}`,
-                vibrate: [200, 100, 200, 100, 200], // Enhanced vibration pattern
-                sound: 'default',
-                actions: [
-                  { action: 'view-message', title: 'View' },
-                  { action: 'mark-read', title: 'Mark Read' }
-                ],
-                requireInteraction: true, // Keep notification visible
-                data: {
-                  type: 'messages',
-                  phoneNumber: phoneNumber,
-                  conversationId: existingConv.rows[0].id,
-                  url: '/messages'
-                }
-              });
-
-              logger.info('Push notifications sent for inbound message', {
-                phoneNumber,
-                userCount: userIds.length
-              });
-
               // TEST MODE: Bypass ALL safeguards for whitelisted test numbers
               const isTestNumber = TEST_PHONE_WHITELIST.includes(phoneNumber);
               if (isTestNumber) {
@@ -1285,48 +1273,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
           assistantType
         });
         
-        // Send push notification for new inbound conversation
-        // FIX: Use our determined direction, not the raw webhook data
+        // Push notification already sent early (before processing) — skip duplicate for new conversations
         if (messageDirection === 'inbound') {
-          try {
-            const users = await db.query(
-              `SELECT id FROM users 
-               WHERE role IN ('admin', 'operator', 'support') 
-               AND is_active = true`
-            );
-            
-            const userIds = users.rows.map((u: any) => u.id);
-
-            await notificationService.sendToUsers(userIds, {
-              title: `New conversation from ${customerName}`,
-              body: (messageData.body || messageData.text || '').substring(0, 100) + 
-                    (messageData.body?.length > 100 ? '...' : ''),
-              icon: '/logo-192.png',
-              badge: '/badge-72.png',
-              tag: `message-${phoneNumber}`,
-              vibrate: [200, 100, 200, 100, 200], // Enhanced vibration pattern
-              sound: 'default',
-              actions: [
-                { action: 'view-message', title: 'View' },
-                { action: 'mark-read', title: 'Mark Read' }
-              ],
-              requireInteraction: true, // Keep notification visible
-              data: {
-                type: 'messages',
-                phoneNumber: phoneNumber,
-                conversationId: newConversationId,
-                url: '/messages'
-              }
-            });
-            
-            logger.info('Push notifications sent for new conversation', {
-              phoneNumber,
-              userCount: userIds.length
-            });
-          } catch (notifError) {
-            logger.error('Failed to send push notification:', notifError);
-          }
-
           // ClubAI: Process the first message from a new conversation
           // (Separated from push notifications so ClubAI runs even if notifications fail)
           const newMessageText = messageData.body || messageData.text || '';
