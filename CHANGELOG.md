@@ -2,6 +2,13 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.32.2] - 2026-04-05
+
+### Fixed — ClubAI Sending Double Messages
+- **Redis-backed webhook dedup** — OpenPhone fires both `message.received` and `message.created` for the same SMS with different message IDs. The old in-memory dedup Maps couldn't reliably catch this because the events also had different `from` field formatting. Replaced with Redis `SETNX` (atomic set-if-not-exists) for both message ID and content-based dedup. Phone numbers are now normalized to last 10 digits so formatting differences don't bypass the check. Falls back to in-memory if Redis is unavailable.
+- **AI response limit no longer inflated by duplicates** — Double messages were incrementing `ai_response_count` twice per customer message, causing the safety limit to trigger mid-conversation (especially during TrackMan restart flows). With dedup fixed, the counter tracks accurately.
+- **Hardcoded fallback default raised** — `aiResponseLimit` fallback changed from 3 to 6 (only applies if DB config is missing; the UI slider value takes priority).
+
 ## [1.32.1] - 2026-04-04
 
 ### Fixed — ClubAI TrackMan Restart Not Actually Executing

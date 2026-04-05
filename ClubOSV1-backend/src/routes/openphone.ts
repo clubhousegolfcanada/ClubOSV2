@@ -14,6 +14,7 @@ import { patternLearningService } from '../services/patternLearningService';
 import { patternSafetyService } from '../services/patternSafetyService';
 import { detectMessageTopic, getTopicLabel } from '../utils/topicDetection';
 import { clubaiService } from '../services/clubaiService';
+import { cacheService } from '../services/cacheService';
 import { messageEvents } from './messages';
 
 const router = Router();
@@ -22,14 +23,15 @@ const router = Router();
 // WEBHOOK DEDUP: Prevent processing the same message twice
 // OpenPhone fires multiple events per message (message.received + message.created).
 // Without this, ClubAI generates and sends two separate responses.
-// Two layers: (1) message ID dedup, (2) phone+text content dedup as fallback
-// when message IDs differ between event types or are missing.
+//
+// Primary: Redis SETNX (atomic, works across server restarts/instances)
+// Fallback: In-memory Maps (if Redis is unavailable)
+// Two layers: (1) message ID dedup, (2) normalized phone+text content dedup
 // ============================================
-const processedMessageIds = new Map<string, number>(); // messageId -> timestamp
-const processedContentHashes = new Map<string, number>(); // phone+textHash -> timestamp
-const DEDUP_MAX_SIZE = 10000; // Cap to prevent unbounded memory growth
+const processedMessageIds = new Map<string, number>(); // tertiary fallback
+const processedContentHashes = new Map<string, number>(); // tertiary fallback
+const DEDUP_MAX_SIZE = 10000;
 
-// Evict oldest 20% when a dedup map exceeds max size
 function evictOldest(map: Map<string, number>): void {
   if (map.size <= DEDUP_MAX_SIZE) return;
   const entries = [...map.entries()].sort((a, b) => a[1] - b[1]);
@@ -39,22 +41,46 @@ function evictOldest(map: Map<string, number>): void {
   }
 }
 
-function isMessageAlreadyProcessed(messageId: string): boolean {
+/**
+ * Normalize phone number for dedup: strip to last 10 digits.
+ * Ensures "+1 (555) 123-4567" and "5551234567" produce the same key.
+ */
+function normalizePhoneForDedup(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  return digits.length > 10 ? digits.slice(-10) : digits;
+}
+
+/**
+ * Redis-first dedup by message ID. Returns true if duplicate.
+ */
+async function isDuplicateByMessageId(messageId: string): Promise<boolean> {
   if (!messageId) return false;
-  if (processedMessageIds.has(messageId)) {
-    return true;
-  }
+
+  const wasNew = await cacheService.setnx(`webhook:dedup:id:${messageId}`, 300);
+  if (!wasNew) return true; // Key existed = duplicate
+
+  // Also populate in-memory fallback
   evictOldest(processedMessageIds);
   processedMessageIds.set(messageId, Date.now());
   return false;
 }
 
-function isContentAlreadyProcessed(phoneNumber: string, messageText: string): boolean {
+/**
+ * Redis-first dedup by normalized phone + text content.
+ * Catches duplicates when message IDs differ between event types.
+ * Returns true if duplicate.
+ */
+async function isDuplicateByContent(phoneNumber: string, messageText: string): Promise<boolean> {
   if (!phoneNumber || !messageText) return false;
-  const contentKey = `${phoneNumber}:${messageText.substring(0, 100).trim().toLowerCase()}`;
-  if (processedContentHashes.has(contentKey)) {
-    return true;
-  }
+
+  const normalizedPhone = normalizePhoneForDedup(phoneNumber);
+  const normalizedText = messageText.substring(0, 100).trim().toLowerCase();
+  const contentKey = `${normalizedPhone}:${normalizedText}`;
+
+  const wasNew = await cacheService.setnx(`webhook:dedup:content:${contentKey}`, 300);
+  if (!wasNew) return true; // duplicate
+
+  // Also populate in-memory fallback
   evictOldest(processedContentHashes);
   processedContentHashes.set(contentKey, Date.now());
   return false;
@@ -340,7 +366,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
         // OpenPhone fires multiple events per message (message.received + message.created),
         // which caused ClubAI to send duplicate responses.
         const webhookMessageId = messageData.id || data.id;
-        if (webhookMessageId && isMessageAlreadyProcessed(webhookMessageId)) {
+        if (webhookMessageId && await isDuplicateByMessageId(webhookMessageId)) {
           logger.info('[Dedup] Skipping already-processed message (ID match)', {
             messageId: webhookMessageId,
             eventType: type,
@@ -354,7 +380,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
         // by matching phone number + message text within a 5-minute window.
         const dedupPhone = messageData.from || '';
         const dedupText = messageData.body || messageData.text || '';
-        if (dedupPhone && dedupText && isContentAlreadyProcessed(dedupPhone, dedupText)) {
+        if (dedupPhone && dedupText && await isDuplicateByContent(dedupPhone, dedupText)) {
           logger.info('[Dedup] Skipping already-processed message (content match)', {
             messageId: webhookMessageId,
             eventType: type,

@@ -157,7 +157,7 @@ class CacheService {
         
         // Limit memory cache size
         if (this.fallbackCache.size > 1000) {
-          const firstKey = this.fallbackCache.keys().next().value;
+          const firstKey = this.fallbackCache.keys().next().value ?? '';
           this.fallbackCache.delete(firstKey);
         }
         
@@ -168,6 +168,41 @@ class CacheService {
       this.stats.errors++;
       logger.error('Cache set error:', error);
       return false;
+    }
+  }
+
+  /**
+   * Atomic set-if-not-exists. Returns true if the key was SET (didn't exist).
+   * Returns false if the key already existed (duplicate detected).
+   * Uses Redis SET ... NX EX for atomicity. Falls back to in-memory check
+   * (safe — Node is single-threaded so check-then-set has no race condition).
+   * Fail-open on errors (allows processing rather than dropping messages).
+   */
+  async setnx(key: string, ttlSeconds: number = 300): Promise<boolean> {
+    try {
+      if (this.redis && this.isConnected) {
+        const result = await this.redis.set(key, '1', 'EX', ttlSeconds, 'NX');
+        return result === 'OK';
+      } else {
+        // In-memory fallback (single-threaded, so check-then-set is safe)
+        const cached = this.fallbackCache.get(key);
+        if (cached && cached.expiry > Date.now()) {
+          return false; // Key exists and not expired
+        }
+        this.fallbackCache.set(key, {
+          value: '1',
+          expiry: Date.now() + (ttlSeconds * 1000)
+        });
+        if (this.fallbackCache.size > 1000) {
+          const firstKey = this.fallbackCache.keys().next().value ?? '';
+          this.fallbackCache.delete(firstKey);
+        }
+        return true;
+      }
+    } catch (error) {
+      this.stats.errors++;
+      logger.error('Cache setnx error:', error);
+      return true; // Fail-open: allow processing
     }
   }
 

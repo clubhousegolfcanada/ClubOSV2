@@ -58,7 +58,7 @@ class PatternSafetyService {
   private rapidMessageThreshold: number = 3;
   private rapidMessageWindowSeconds: number = 60;
   private rapidMessageEnabled: boolean = true;
-  private aiResponseLimit: number = 3;
+  private aiResponseLimit: number = 6;
   private aiResponseLimitEnabled: boolean = true;
   private operatorLockoutHours: number = 4;
   private escalationMessage: string = "I see you're still having trouble. Let me connect you with one of our team members who can help you directly. Someone will be with you shortly.\n\n- ClubAI";
@@ -110,16 +110,16 @@ class PatternSafetyService {
         )
       `);
 
-      result.rows.forEach(row => {
+      result.rows.forEach((row: any) => {
         switch (row.config_key) {
           case 'blacklist_topics':
             this.blacklistTopics = row.config_value ?
-              row.config_value.split(',').map((t: string) => t.trim().toLowerCase()).filter(t => t.length > 0) :
+              row.config_value.split(',').map((t: string) => t.trim().toLowerCase()).filter((t: any) => t.length > 0) :
               [];
             break;
           case 'escalation_keywords':
             this.escalationKeywords = row.config_value ?
-              row.config_value.split(',').map((k: string) => k.trim().toLowerCase()).filter(k => k.length > 0) :
+              row.config_value.split(',').map((k: string) => k.trim().toLowerCase()).filter((k: any) => k.length > 0) :
               [];
             break;
           case 'require_approval_for_new':
@@ -145,7 +145,7 @@ class PatternSafetyService {
             this.rapidMessageEnabled = row.config_value !== 'false';
             break;
           case 'ai_response_limit':
-            this.aiResponseLimit = parseInt(row.config_value) || 3;
+            this.aiResponseLimit = parseInt(row.config_value) || 6;
             break;
           case 'ai_response_limit_enabled':
             this.aiResponseLimitEnabled = row.config_value !== 'false';
@@ -472,7 +472,7 @@ class PatternSafetyService {
       let totalWeight = 0;
       let weightedConfidence = 0;
       
-      examplesResult.rows.forEach(ex => {
+      examplesResult.rows.forEach((ex: any) => {
         const weight = ex.was_modified ? this.operatorOverrideWeight : 1.0;
         totalWeight += weight;
         weightedConfidence += ex.confidence_score * weight;
