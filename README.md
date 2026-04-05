@@ -1,4 +1,4 @@
-# ClubOS v1.31.3 - Facility Management System
+# ClubOS v1.32.1 - Facility Management System
 
 Production system for Clubhouse 24/7 — managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 

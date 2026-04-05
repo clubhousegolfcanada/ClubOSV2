@@ -2,6 +2,12 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.32.1] - 2026-04-04
+
+### Fixed — ClubAI TrackMan Restart Not Actually Executing
+- **System prompt contradiction removed** — ClubAI's system prompt said "You CANNOT reset TrackMan remotely" in the CAN/CANNOT section, directly contradicting the restart_trackman tool instructions. GPT would see both, get confused, and just *say* "restarting now" as plain text without calling the tool. Removed the contradiction and explicitly listed remote restart as a capability.
+- **Null-response fallthrough fixed** — When GPT called restart_trackman with `customer_confirmed=false` (asking for confirmation first), OpenAI's API returns `content: null` on tool calls. The old code assumed the text response would "fall through" to normal handling, but it was always null — customer got no response at all. Now sends an explicit confirmation prompt.
+
 ## [1.32.0] - 2026-04-03
 
 ### Feature — TrackMan Remote Restart

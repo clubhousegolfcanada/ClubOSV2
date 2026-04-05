@@ -1107,8 +1107,15 @@ router.post('/webhook', async (req: Request, res: Response) => {
                     const args = clubaiResult.functionCall.arguments;
 
                     if (!args.customer_confirmed) {
-                      logger.info('[ClubAI] restart_trackman called without confirmation, sending text only', { args });
-                      // Fall through to normal text response handling below
+                      logger.info('[ClubAI] restart_trackman called without confirmation, sending confirmation prompt', { args });
+                      // GPT made a tool call but customer hasn't confirmed yet.
+                      // OpenAI returns content=null on tool calls, so clubaiResult.response is null.
+                      // We must send the confirmation message ourselves.
+                      const confirmMsg = clubaiResult.response
+                        || `Got it — ${args.location} Box ${args.bay_number}. Can we go ahead and reset for you? If you have a TrackMan account you can pick back up from "My Activities". - ClubAI`;
+                      await openPhoneService.sendMessage(phoneNumber, clubaiDefaultNumber!, confirmMsg);
+                      await clubaiService.storeClubAIMessage(convId, confirmMsg, 0.85);
+                      return res.json({ success: true, message: 'ClubAI sent restart confirmation prompt' });
                     } else {
                       const restartResult = await triggerRestart(
                         args.location, args.bay_number, 'clubai'
