@@ -2,6 +2,14 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.32.3] - 2026-04-06
+
+### Fixed — ClubAI TrackMan Restart Flow Improvements
+- **Location/box in first message now recognised** — System prompt told GPT to check conversation *history* for location/box, so when it arrived in the very first message it was missed and ClubAI asked again. Now explicitly instructs GPT to check the current message AND history.
+- **Cooldown treated as patience, not failure** — When a customer asked to restart again within 10 minutes, `triggerRestart()` returned a cooldown error and ClubAI said "Couldn't trigger the remote restart" — implying the original restart also failed. Now detects the cooldown error string and sends "The restart is already running — TrackMan takes 2-3 minutes to fully load. Give it a bit more time!" without locking/escalating.
+- **Restart timing corrected** — SMS told customers "back up in about 60 seconds" but TrackMan takes ~2 minutes. Changed to "about 2 minutes". Follow-up status check moved from 90s to 120s to match.
+- **Post-restart patience rule added to prompt** — If customer says it's still loading after a restart, GPT now tells them to wait rather than attempting a second restart.
+
 ## [1.32.2] - 2026-04-05
 
 ### Fixed — ClubAI Sending Double Messages

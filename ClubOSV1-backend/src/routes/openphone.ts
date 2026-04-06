@@ -1148,7 +1148,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
                       );
 
                       if (restartResult.success) {
-                        const restartMsg = `Restarting now. Should be back up in about 60 seconds. If you have a TrackMan account you can pick back up from "My Activities". - ClubAI`;
+                        const restartMsg = `Restarting now. Should be back up in about 2 minutes. If you have a TrackMan account you can pick back up from "My Activities". - ClubAI`;
                         await openPhoneService.sendMessage(phoneNumber, clubaiDefaultNumber!, restartMsg);
                         await clubaiService.storeClubAIMessage(convId, restartMsg, 0.95);
 
@@ -1168,7 +1168,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
                           commandId: restartResult.commandId
                         });
 
-                        // Follow-up check in 90 seconds
+                        // Follow-up check in 120 seconds
                         setTimeout(async () => {
                           try {
                             const status = await checkRestartStatus(restartResult.commandId!);
@@ -1190,11 +1190,22 @@ router.post('/webhook', async (req: Request, res: Response) => {
                           } catch (followUpErr) {
                             logger.error('[ClubAI] Restart follow-up error:', followUpErr);
                           }
-                        }, 90000);
+                        }, 120000);
 
                         return res.json({ success: true, message: 'ClubAI triggered TrackMan restart' });
                       } else {
                         logger.warn('[ClubAI] restart_trackman failed:', restartResult.error);
+
+                        // If the failure is the 10-min cooldown, the restart already happened —
+                        // tell the customer to wait rather than falsely implying it failed.
+                        const isCooldown = restartResult.error?.includes('minutes ago') || restartResult.error?.includes('restarted');
+                        if (isCooldown) {
+                          const cooldownMsg = `The restart is already running — TrackMan can take 2-3 minutes to fully load. Give it a bit more time! - ClubAI`;
+                          await openPhoneService.sendMessage(phoneNumber, clubaiDefaultNumber!, cooldownMsg);
+                          await clubaiService.storeClubAIMessage(convId, cooldownMsg, 0.85);
+                          return res.json({ success: true, message: 'ClubAI informed customer restart already in progress' });
+                        }
+
                         const fallbackMsg = `Couldn't trigger the remote restart right now. Let me connect you with the team — they'll sort it out. - ClubAI`;
                         await openPhoneService.sendMessage(phoneNumber, clubaiDefaultNumber!, fallbackMsg);
                         await clubaiService.storeClubAIMessage(convId, fallbackMsg, 0.7);
