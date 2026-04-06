@@ -135,8 +135,12 @@ router.post('/import', authenticate, async (req: Request, res: Response) => {
 
     let imported = 0;
     let skipped = 0;
+    let autoReconciled = 0;
+    const unmatchedDebits: Array<{ txnId: string; date: string; description: string; amount: number }> = [];
 
     for (const txn of transactions) {
+      const matchedReceiptId = txn.matchedReceipt?.id || txn.matched_receipt_id || null;
+
       const result = await db.query(`
         INSERT INTO bank_transactions (
           txn_id, account, card, txn_date, posting_date, description,
@@ -160,20 +164,51 @@ router.post('/import', authenticate, async (req: Request, res: Response) => {
         txn.cad_amount ? Math.round(txn.cad_amount * 100) : null,
         txn.visa_ref || null,
         fileHash,
-        txn.matchedReceipt?.id || txn.matched_receipt_id || null,
+        matchedReceiptId,
         user.id,
       ]);
-      if (result.rows.length > 0) imported++;
-      else skipped++;
+
+      if (result.rows.length > 0) {
+        imported++;
+
+        // Auto-reconcile matched receipts
+        if (matchedReceiptId) {
+          try {
+            const reconcileResult = await db.query(`
+              UPDATE receipts SET reconciled = true, reconciled_at = NOW(), reconciled_by = $1, updated_at = NOW()
+              WHERE id = $2 AND (reconciled = false OR reconciled IS NULL)
+            `, [user.id, matchedReceiptId]);
+            if (reconcileResult.rowCount && reconcileResult.rowCount > 0) autoReconciled++;
+          } catch (_) { /* best effort */ }
+        }
+
+        // Track unmatched debits for the response
+        if (!matchedReceiptId && txn.debit) {
+          unmatchedDebits.push({
+            txnId: txn.txnId || txn.txn_id,
+            date: txn.date || txn.txn_date,
+            description: txn.description,
+            amount: txn.debit,
+          });
+        }
+      } else {
+        skipped++;
+      }
     }
 
-    logger.info(`Bank statement imported: ${imported} transactions, ${skipped} duplicates skipped`, {
+    logger.info(`Bank statement imported: ${imported} transactions, ${skipped} duplicates, ${autoReconciled} auto-reconciled`, {
       fileHash, account, userId: user.id
     });
 
     return res.json({
       success: true,
-      data: { imported, skipped, total: transactions.length }
+      data: {
+        imported,
+        skipped,
+        autoReconciled,
+        total: transactions.length,
+        unmatchedDebits: unmatchedDebits.sort((a, b) => b.amount - a.amount).slice(0, 20),
+      }
     });
   } catch (error: any) {
     logger.error('Bank statement import error:', error);

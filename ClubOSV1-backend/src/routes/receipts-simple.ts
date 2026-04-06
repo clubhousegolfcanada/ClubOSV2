@@ -4,7 +4,7 @@ import rateLimit from 'express-rate-limit';
 import { db } from '../utils/database';
 import { logger } from '../utils/logger';
 import { body, validationResult, query } from 'express-validator';
-import { formatOCRForDisplay, processMultiReceiptImage } from '../services/ocr/receiptOCR';
+import { formatOCRForDisplay, processMultiReceiptImage, applyVendorDefaults, getVendorDefaults, saveVendorDefaults } from '../services/ocr/receiptOCR';
 import { processReceiptSmart } from '../services/ocr/veryfiOCR';
 import { convertImageToPdf } from '../services/receipt/imageToPdf';
 import { splitPdfPages } from '../services/receipt/pdfSplitter';
@@ -117,12 +117,73 @@ router.get('/summary', authenticate, async (req: Request, res: Response) => {
     `;
     const categoryResult = await db.query(categoryQuery, queryParams);
 
-    // Count receipts needing review (low confidence or fuzzy duplicate)
-    const reviewCondition = '(ocr_confidence < 0.7 OR fuzzy_duplicate_of IS NOT NULL)';
+    // Count receipts needing review (expanded criteria)
+    const reviewCondition = `(
+      ocr_confidence < 0.7
+      OR fuzzy_duplicate_of IS NOT NULL
+      OR vendor IS NULL OR vendor = ''
+      OR category IS NULL OR category = 'Other'
+      OR amount_cents IS NULL
+    )`;
     const reviewQuery = dateFilter
       ? `SELECT COUNT(*) as count FROM receipts ${dateFilter} AND ${reviewCondition}`
       : `SELECT COUNT(*) as count FROM receipts WHERE ${reviewCondition}`;
     const reviewResult = await db.query(reviewQuery, queryParams);
+
+    // Breakdown of why receipts need review
+    const breakdownCondition = dateFilter || '';
+    const breakdownQuery = `
+      SELECT
+        COUNT(*) FILTER (WHERE ocr_confidence < 0.7) as low_confidence,
+        COUNT(*) FILTER (WHERE fuzzy_duplicate_of IS NOT NULL) as possible_duplicates,
+        COUNT(*) FILTER (WHERE vendor IS NULL OR vendor = '') as missing_vendor,
+        COUNT(*) FILTER (WHERE category IS NULL OR category = 'Other') as needs_category,
+        COUNT(*) FILTER (WHERE amount_cents IS NULL) as missing_amount
+      FROM receipts
+      ${breakdownCondition}
+    `;
+    const breakdownResult = await db.query(breakdownQuery, queryParams);
+    const bd = breakdownResult.rows[0] || {};
+
+    // Count unmatched bank debits for this period
+    let unmatchedBankDebits = 0;
+    if (queryParams.length > 0) {
+      const unmatchedQuery = queryParams.length === 2
+        ? `SELECT COUNT(*) as count FROM bank_transactions WHERE matched_receipt_id IS NULL AND debit IS NOT NULL AND txn_date >= $1 AND txn_date <= $2`
+        : `SELECT COUNT(*) as count FROM bank_transactions WHERE matched_receipt_id IS NULL AND debit IS NOT NULL AND txn_date >= $1`;
+      try {
+        const unmatchedResult = await db.query(unmatchedQuery, queryParams);
+        unmatchedBankDebits = parseInt(unmatchedResult.rows[0]?.count) || 0;
+      } catch (_) { /* bank_transactions table may not exist yet */ }
+    }
+
+    // Count recurring vendors missing this month
+    let missingRecurring = 0;
+    if (year && month) {
+      try {
+        const recurringQuery = `
+          WITH monthly_vendors AS (
+            SELECT vendor, DATE_TRUNC('month', COALESCE(purchase_date, created_at::date)) as mnth
+            FROM receipts
+            WHERE vendor IS NOT NULL AND vendor != ''
+            AND COALESCE(purchase_date, created_at::date) >= (NOW() - INTERVAL '6 months')
+            GROUP BY vendor, DATE_TRUNC('month', COALESCE(purchase_date, created_at::date))
+          ),
+          recurring AS (
+            SELECT vendor FROM monthly_vendors GROUP BY vendor HAVING COUNT(DISTINCT mnth) >= 3
+          )
+          SELECT COUNT(*) as count FROM recurring r
+          WHERE NOT EXISTS (
+            SELECT 1 FROM receipts
+            WHERE LOWER(TRIM(vendor)) = LOWER(TRIM(r.vendor))
+            AND DATE_TRUNC('month', COALESCE(purchase_date, created_at::date)) = DATE_TRUNC('month', $1::date)
+          )
+        `;
+        const targetDate = `${year}-${String(month).padStart(2, '0')}-01`;
+        const recurringResult = await db.query(recurringQuery, [targetDate]);
+        missingRecurring = parseInt(recurringResult.rows[0]?.count) || 0;
+      } catch (_) { /* ignore if query fails */ }
+    }
 
     return res.json({
       totalReceipts: parseInt(result.total_receipts) || 0,
@@ -131,6 +192,15 @@ router.get('/summary', authenticate, async (req: Request, res: Response) => {
       totalHst: (parseInt(result.total_hst_cents) || 0) / 100,
       unreconciled: parseInt(result.unreconciled_count) || 0,
       needsReview: parseInt(reviewResult.rows[0]?.count) || 0,
+      needsReviewBreakdown: {
+        lowConfidence: parseInt(bd.low_confidence) || 0,
+        possibleDuplicates: parseInt(bd.possible_duplicates) || 0,
+        missingVendor: parseInt(bd.missing_vendor) || 0,
+        needsCategory: parseInt(bd.needs_category) || 0,
+        missingAmount: parseInt(bd.missing_amount) || 0,
+      },
+      unmatchedBankDebits,
+      missingRecurring,
       categories: categoryResult.rows.map((row: any) => ({
         category: row.category,
         count: parseInt(row.count) || 0,
@@ -578,6 +648,16 @@ router.post('/upload',
           }
         }
 
+        // Apply learned vendor defaults (category, location from past corrections)
+        if (ocrResult?.vendor) {
+          await applyVendorDefaults(ocrResult);
+          // Also apply location default if user didn't specify one
+          if (!club_location) {
+            const defaults = await getVendorDefaults(ocrResult.vendor);
+            if (defaults?.club_location) club_location = defaults.club_location;
+          }
+        }
+
         // Build storage data
         let storageData = fileData;
         let storageMimeType = 'application/pdf';
@@ -877,9 +957,9 @@ router.get('/search',
         paramIndex++;
       }
 
-      // Needs review filter (low confidence OR fuzzy duplicate)
+      // Needs review filter (expanded: low confidence, fuzzy dupe, missing vendor/category/amount)
       if (needs_review === 'true') {
-        queryStr += ` AND (r.ocr_confidence < 0.7 OR r.fuzzy_duplicate_of IS NOT NULL)`;
+        queryStr += ` AND (r.ocr_confidence < 0.7 OR r.fuzzy_duplicate_of IS NOT NULL OR r.vendor IS NULL OR r.vendor = '' OR r.category IS NULL OR r.category = 'Other' OR r.amount_cents IS NULL)`;
       }
 
       // Save WHERE clause for count query before adding ORDER BY / LIMIT
@@ -1086,6 +1166,16 @@ router.patch('/:id',
         INSERT INTO receipt_audit_log (receipt_id, action, changed_fields, user_id)
         VALUES ($1, 'update', $2, $3)
       `, [id, JSON.stringify(updates), user.id]);
+
+      // Learn vendor defaults from corrections (category, location, payment method)
+      const updatedReceipt = result.rows[0];
+      if (updatedReceipt.vendor && (updates.category || updates.club_location || updates.payment_method)) {
+        await saveVendorDefaults(updatedReceipt.vendor, {
+          category: updates.category || undefined,
+          club_location: updates.club_location || undefined,
+          payment_method: updates.payment_method || undefined,
+        }, user.id);
+      }
 
       return res.json({
         success: true,

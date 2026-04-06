@@ -1,5 +1,5 @@
 import React from 'react';
-import { Receipt, AlertCircle } from 'lucide-react';
+import { Receipt, AlertCircle, AlertTriangle, Building2, RefreshCw } from 'lucide-react';
 
 interface MonthlySummaryCardProps {
   summary: {
@@ -8,6 +8,9 @@ interface MonthlySummaryCardProps {
     totalTax: number;
     totalHst: number;
     unreconciled: number;
+    needsReview?: number;
+    unmatchedBankDebits?: number;
+    missingRecurring?: number;
     categories: Array<{ category: string; count: number; total: number }>;
   } | null;
   loading: boolean;
@@ -18,6 +21,8 @@ export const MonthlySummaryCard: React.FC<MonthlySummaryCardProps> = ({ summary,
     ? Math.max(...summary.categories.map(c => c.total))
     : 0;
 
+  const alertCount = (summary?.needsReview || 0) + (summary?.unmatchedBankDebits || 0) + (summary?.missingRecurring || 0);
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div className="flex items-center gap-3 mb-4">
@@ -25,6 +30,11 @@ export const MonthlySummaryCard: React.FC<MonthlySummaryCardProps> = ({ summary,
           <Receipt className="w-5 h-5 text-green-600" />
         </div>
         <h3 className="text-lg font-semibold text-gray-900">Monthly Summary</h3>
+        {alertCount > 0 && (
+          <span className="ml-auto inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 text-xs font-bold rounded-full bg-red-100 text-red-700">
+            {alertCount}
+          </span>
+        )}
       </div>
 
       {loading ? (
@@ -54,14 +64,44 @@ export const MonthlySummaryCard: React.FC<MonthlySummaryCardProps> = ({ summary,
             </div>
           </div>
 
-          {summary.unreconciled > 0 && (
-            <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg">
-              <AlertCircle className="w-4 h-4 text-orange-500" />
-              <span className="text-sm text-orange-700">
-                {summary.unreconciled} unreconciled receipt{summary.unreconciled !== 1 ? 's' : ''}
-              </span>
-            </div>
-          )}
+          {/* Alerts Section */}
+          <div className="space-y-2 mb-4">
+            {(summary.needsReview ?? 0) > 0 && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+                <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                <span className="text-sm text-amber-700">
+                  {summary.needsReview} receipt{summary.needsReview !== 1 ? 's' : ''} need{summary.needsReview === 1 ? 's' : ''} review
+                </span>
+              </div>
+            )}
+
+            {summary.unreconciled > 0 && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg">
+                <AlertCircle className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                <span className="text-sm text-orange-700">
+                  {summary.unreconciled} unreconciled receipt{summary.unreconciled !== 1 ? 's' : ''}
+                </span>
+              </div>
+            )}
+
+            {(summary.unmatchedBankDebits ?? 0) > 0 && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
+                <Building2 className="w-4 h-4 text-red-500 flex-shrink-0" />
+                <span className="text-sm text-red-700">
+                  {summary.unmatchedBankDebits} bank debit{summary.unmatchedBankDebits !== 1 ? 's' : ''} missing receipt{summary.unmatchedBankDebits !== 1 ? 's' : ''}
+                </span>
+              </div>
+            )}
+
+            {(summary.missingRecurring ?? 0) > 0 && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-purple-50 border border-purple-200 rounded-lg">
+                <RefreshCw className="w-4 h-4 text-purple-500 flex-shrink-0" />
+                <span className="text-sm text-purple-700">
+                  {summary.missingRecurring} recurring vendor{summary.missingRecurring !== 1 ? 's' : ''} missing this month
+                </span>
+              </div>
+            )}
+          </div>
 
           {summary.categories && summary.categories.length > 0 && (
             <div>

@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { logger } from '../../utils/logger';
 import { config } from '../../utils/envValidator';
+import { db } from '../../utils/database';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -262,6 +263,78 @@ function categorizeByVendor(vendor: string | null): string {
   }
 
   return 'Other';
+}
+
+/**
+ * Look up learned vendor defaults from past user corrections.
+ * Returns category/location/payment_method if the vendor has been corrected before.
+ */
+export async function getVendorDefaults(vendor: string | null): Promise<{ category?: string; club_location?: string; payment_method?: string } | null> {
+  if (!vendor) return null;
+  try {
+    const result = await db.query(
+      'SELECT category, club_location, payment_method FROM vendor_defaults WHERE vendor_normalized = $1',
+      [vendor.toLowerCase().trim()]
+    );
+    if (result.rows.length > 0) {
+      const row = result.rows[0];
+      return {
+        category: row.category || undefined,
+        club_location: row.club_location || undefined,
+        payment_method: row.payment_method || undefined,
+      };
+    }
+    return null;
+  } catch {
+    // Table may not exist yet — fail silently
+    return null;
+  }
+}
+
+/**
+ * Save/update vendor defaults when a user corrects a receipt.
+ * Only overwrites fields that were actually provided.
+ */
+export async function saveVendorDefaults(
+  vendor: string,
+  fields: { category?: string; club_location?: string; payment_method?: string },
+  userId: string
+): Promise<void> {
+  if (!vendor) return;
+  try {
+    await db.query(`
+      INSERT INTO vendor_defaults (vendor_normalized, category, club_location, payment_method, updated_by)
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (vendor_normalized) DO UPDATE SET
+        category = COALESCE(EXCLUDED.category, vendor_defaults.category),
+        club_location = COALESCE(EXCLUDED.club_location, vendor_defaults.club_location),
+        payment_method = COALESCE(EXCLUDED.payment_method, vendor_defaults.payment_method),
+        updated_at = NOW(),
+        updated_by = EXCLUDED.updated_by
+    `, [
+      vendor.toLowerCase().trim(),
+      fields.category || null,
+      fields.club_location || null,
+      fields.payment_method || null,
+      userId,
+    ]);
+  } catch (err) {
+    logger.warn('Failed to save vendor defaults:', err);
+  }
+}
+
+/**
+ * Apply vendor defaults to an OCR result. Learned defaults override
+ * the hardcoded categorizeByVendor() and GPT guesses.
+ */
+export async function applyVendorDefaults(ocrResult: ReceiptOCRResult): Promise<ReceiptOCRResult> {
+  const defaults = await getVendorDefaults(ocrResult.vendor);
+  if (defaults) {
+    if (defaults.category) ocrResult.category = defaults.category;
+    if (defaults.payment_method) ocrResult.paymentMethod = defaults.payment_method;
+    logger.info('Applied vendor defaults', { vendor: ocrResult.vendor, category: defaults.category, location: defaults.club_location });
+  }
+  return ocrResult;
 }
 
 /**

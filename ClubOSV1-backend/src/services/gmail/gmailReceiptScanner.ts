@@ -14,6 +14,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { db } from '../../utils/database';
 import { logger } from '../../utils/logger';
 import { processReceiptSmart } from '../ocr/veryfiOCR';
+import { applyVendorDefaults } from '../ocr/receiptOCR';
 import { convertImageToPdf } from '../receipt/imageToPdf';
 import { hash } from '../../utils/encryption';
 import * as fs from 'fs';
@@ -294,17 +295,32 @@ function isLikelyReceiptEmail(subject: string, from: string): boolean {
   return receiptKeywords.some(kw => s.includes(kw) || f.includes(kw));
 }
 
-// --- Text-based Receipt Extraction ---
+// --- Receipt Extraction ---
 
-async function extractFromText(
-  text: string,
+const RECEIPT_EXTRACTION_PROMPT = `You are a Canadian receipt data extractor for a business in Nova Scotia.
+Extract transaction data from this email.
+Return JSON: { vendor, totalAmount, taxAmount, hstAmount, hstRegNumber, subtotal, purchaseDate (YYYY-MM-DD),
+paymentMethod, lineItems: [{description, quantity, totalPrice}], category }
+Categories: Supplies, Equipment, Services, Food, Office, Utilities, Fuel, Software, Advertising, Insurance, Rent, Maintenance, Professional Fees, Shipping, Other
+If a field cannot be determined, use null.`;
+
+/**
+ * Extract receipt data from raw HTML — preserves table structure that
+ * contains line items and totals. Much better than flattened text.
+ */
+async function extractFromHtml(
+  html: string,
   from: string,
   subject: string
 ): Promise<any> {
   const OpenAI = (await import('openai')).default;
-  const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+  // Strip only script/style tags, keep all HTML structure (tables, etc.)
+  const cleanHtml = html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .slice(0, 15000); // ~4K tokens — GPT-4o handles HTML well
 
   try {
     const response = await openai.chat.completions.create({
@@ -312,13 +328,44 @@ async function extractFromText(
       messages: [
         {
           role: 'system',
-          content: `You are a Canadian receipt data extractor for a business in Nova Scotia.
-Extract transaction data from this email text.
-Return JSON: { vendor, totalAmount, taxAmount, hstAmount, hstRegNumber, subtotal, purchaseDate (YYYY-MM-DD),
-paymentMethod, lineItems: [{description, quantity, totalPrice}], category }
-Categories: Supplies, Equipment, Services, Food, Office, Utilities, Fuel, Software, Advertising, Insurance, Rent, Maintenance, Professional Fees, Shipping, Other
-If a field cannot be determined, use null.`
+          content: `${RECEIPT_EXTRACTION_PROMPT}
+The input is raw HTML from a receipt email. Pay special attention to <table> structures — they contain line items and totals. Extract amounts from table cells, not just free text.`
         },
+        {
+          role: 'user',
+          content: `From: ${from}\nSubject: ${subject}\n\n${cleanHtml}`
+        }
+      ],
+      max_tokens: 1000,
+      temperature: 0.1,
+    });
+
+    const content = response.choices[0]?.message?.content || '{}';
+    const jsonStr = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    return JSON.parse(jsonStr);
+  } catch (err) {
+    logger.warn('extractFromHtml failed, falling back to text:', { error: (err as any)?.message || 'Unknown error', from, subject: subject.slice(0, 80) });
+    // Fallback to text extraction
+    return extractFromText(htmlToText(html), from, subject);
+  }
+}
+
+/**
+ * Fallback: extract from plain text (used when HTML extraction fails)
+ */
+async function extractFromText(
+  text: string,
+  from: string,
+  subject: string
+): Promise<any> {
+  const OpenAI = (await import('openai')).default;
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: RECEIPT_EXTRACTION_PROMPT },
         {
           role: 'user',
           content: `From: ${from}\nSubject: ${subject}\n\n${text.slice(0, 3000)}`
@@ -401,6 +448,11 @@ interface GmailReceiptInput {
 
 async function insertGmailReceipt(input: GmailReceiptInput): Promise<string | null> {
   try {
+    // Apply learned vendor defaults (category, location from past corrections)
+    if (input.ocrResult?.vendor) {
+      await applyVendorDefaults(input.ocrResult);
+    }
+
     // Fuzzy duplicate check before insert
     let fuzzyDuplicateId: string | null = null;
     if (input.ocrResult?.vendor && input.ocrResult?.totalAmount) {
@@ -598,7 +650,8 @@ async function processMessage(
     if (htmlBody && isLikelyReceiptEmail(subject, fromHeader)) {
       const textContent = htmlToText(htmlBody);
       if (textContent.length > 50) {
-        const ocrResult = await extractFromText(textContent, fromHeader, subject);
+        // Use HTML extraction (preserves table structure) with text fallback
+        const ocrResult = await extractFromHtml(htmlBody, fromHeader, subject);
         if (ocrResult && (ocrResult.totalAmount || ocrResult.vendor)) {
           const contentHash = hash(textContent);
 

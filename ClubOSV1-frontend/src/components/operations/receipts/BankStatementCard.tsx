@@ -40,7 +40,7 @@ export default function BankStatementCard({ onImportComplete }: BankStatementCar
   const [stage, setStage] = useState<Stage>('idle');
   const [result, setResult] = useState<ParseResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [importResult, setImportResult] = useState<{ imported: number; skipped: number } | null>(null);
+  const [importResult, setImportResult] = useState<{ imported: number; skipped: number; autoReconciled?: number; unmatchedDebits?: Array<{ txnId: string; date: string; description: string; amount: number }> } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -225,13 +225,43 @@ export default function BankStatementCard({ onImportComplete }: BankStatementCar
 
       {/* Done */}
       {stage === 'done' && importResult && (
-        <div className="p-3 bg-green-50 rounded-lg">
-          <p className="text-sm text-green-700">
-            <CheckCircle className="w-4 h-4 inline mr-1" />
-            Imported {importResult.imported} transactions
-            {importResult.skipped > 0 && `, ${importResult.skipped} duplicates skipped`}
-          </p>
-          <button onClick={reset} className="text-xs text-green-600 underline mt-1">Import another</button>
+        <div className="space-y-2">
+          <div className="p-3 bg-green-50 rounded-lg">
+            <p className="text-sm text-green-700">
+              <CheckCircle className="w-4 h-4 inline mr-1" />
+              Imported {importResult.imported} transactions
+              {importResult.skipped > 0 && `, ${importResult.skipped} duplicates skipped`}
+            </p>
+            {(importResult.autoReconciled ?? 0) > 0 && (
+              <p className="text-sm text-green-600 mt-1">
+                <Link2 className="w-3 h-3 inline mr-1" />
+                {importResult.autoReconciled} receipt{importResult.autoReconciled !== 1 ? 's' : ''} auto-reconciled
+              </p>
+            )}
+          </div>
+
+          {importResult.unmatchedDebits && importResult.unmatchedDebits.length > 0 && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-sm font-medium text-amber-800 mb-2">
+                <XCircle className="w-4 h-4 inline mr-1" />
+                {importResult.unmatchedDebits.length} transaction{importResult.unmatchedDebits.length !== 1 ? 's' : ''} missing receipt{importResult.unmatchedDebits.length !== 1 ? 's' : ''}
+              </p>
+              <div className="space-y-1 max-h-32 overflow-y-auto">
+                {importResult.unmatchedDebits.slice(0, 8).map((d, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500 w-16">{d.date?.slice(5)}</span>
+                    <span className="flex-1 truncate text-gray-700 mx-2">{d.description}</span>
+                    <span className="text-red-600 font-medium">${d.amount.toFixed(2)}</span>
+                  </div>
+                ))}
+                {importResult.unmatchedDebits.length > 8 && (
+                  <p className="text-xs text-gray-400 text-center">+ {importResult.unmatchedDebits.length - 8} more</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          <button onClick={reset} className="text-xs text-green-600 underline">Import another</button>
         </div>
       )}
 

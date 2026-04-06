@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.33.0] - 2026-04-06
+
+### Feature — Intelligent Receipts
+- **Vendor memory** — When you correct a receipt's category or location, the system remembers that vendor's defaults. Next receipt from the same vendor auto-applies the learned category/location instead of guessing. Works for both manual uploads and Gmail imports.
+- **Auto-reconciliation** — Bank statement import now automatically marks matched receipts as reconciled. No more manual checkbox clicking after every import.
+- **Missing receipt alerts** — After bank statement import, unmatched debits are surfaced immediately: "5 transactions missing receipts" with a list of the charges. Also shown in the Monthly Summary card for the selected month.
+- **Better Gmail HTML extraction** — Receipt emails from Amazon, Stripe, Uber, etc. that embed data in HTML tables are now parsed with raw HTML (preserving table structure) instead of flattened text. Significantly better line item and total extraction.
+- **Recurring expense detection** — Vendors appearing in 3+ of the last 6 months are tracked as recurring. Monthly Summary alerts when expected vendors are missing this month.
+- **Expanded Needs Review** — The review queue now catches: low OCR confidence, possible duplicates, missing vendor, missing amount, and uncategorized ("Other") receipts. Breakdown shown in summary.
+
 ## [1.32.4] - 2026-04-06
 
 ### Fixed — Receipts Export & Gmail Scanner Improvements
