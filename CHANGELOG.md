@@ -2,6 +2,11 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.33.1] - 2026-04-06
+
+### Fixed — Receipt Image Compression
+- **Images now compressed before PDF conversion** — Phone photos (3-5MB JPEG) were being embedded at full resolution in the PDF wrapper, making the PDF even larger than the original image. Now resizes to 1400px max width and compresses to 85% JPEG quality before embedding, dropping typical receipt photos from 3-5MB to 200-400KB. PDFs are small enough to email to accountants. Uses `sharp` for native-speed processing.
+
 ## [1.33.0] - 2026-04-06
 
 ### Feature — Intelligent Receipts
