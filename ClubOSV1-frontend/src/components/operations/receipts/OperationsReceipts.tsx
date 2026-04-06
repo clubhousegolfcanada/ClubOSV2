@@ -200,24 +200,45 @@ export const OperationsReceipts: React.FC = () => {
 
   return (
     <div className="space-y-4 p-4 sm:p-6">
-      {/* Month Navigation */}
-      <div className="flex items-center justify-center gap-4">
-        <button
-          onClick={goToPrevMonth}
-          className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-        >
-          <ChevronLeft className="w-5 h-5 text-gray-600" />
-        </button>
-        <h2 className="text-xl font-bold text-gray-900 min-w-[200px] text-center">
-          {monthLabel}
-        </h2>
-        <button
-          onClick={goToNextMonth}
-          disabled={isNextDisabled}
-          className="p-2 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <ChevronRight className="w-5 h-5 text-gray-600" />
-        </button>
+      {/* Month Navigation + Export */}
+      <div className="flex items-center justify-between">
+        <div className="w-32 sm:w-40" /> {/* Spacer for centering */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={goToPrevMonth}
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5 text-gray-600" />
+          </button>
+          <h2 className="text-xl font-bold text-gray-900 min-w-[200px] text-center">
+            {monthLabel}
+          </h2>
+          <button
+            onClick={goToNextMonth}
+            disabled={isNextDisabled}
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <ChevronRight className="w-5 h-5 text-gray-600" />
+          </button>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleExport('csv')}
+            disabled={exporting || total === 0}
+            className="px-3 py-1.5 text-sm font-medium rounded-lg flex items-center gap-1.5 border border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Export</span> CSV
+          </button>
+          <button
+            onClick={() => handleExport('zip')}
+            disabled={exporting || total === 0}
+            className="px-3 py-1.5 text-sm font-medium rounded-lg flex items-center gap-1.5 border border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Export</span> ZIP
+          </button>
+        </div>
       </div>
 
       {/* Cards Row */}
@@ -263,13 +284,13 @@ export const OperationsReceipts: React.FC = () => {
         />
       )}
 
-      {/* Action Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <div className="flex items-center gap-3">
+      {/* Action Bar (shown when receipts selected) */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <button
             onClick={handleBulkReconcile}
-            disabled={selectedIds.size === 0 || reconciling}
-            className="px-4 py-2 text-sm font-medium rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-green-600 text-white hover:bg-green-700 disabled:bg-gray-200 disabled:text-gray-400"
+            disabled={reconciling}
+            className="px-4 py-2 text-sm font-medium rounded-lg flex items-center justify-center gap-2 transition-colors bg-green-600 text-white hover:bg-green-700"
           >
             <CheckSquare className="w-4 h-4" />
             {reconciling ? 'Reconciling...' : `Reconcile (${selectedIds.size})`}
@@ -278,26 +299,7 @@ export const OperationsReceipts: React.FC = () => {
             <span className="text-sm text-red-600">{reconcileError}</span>
           )}
         </div>
-
-        <div className="flex gap-2">
-          <button
-            onClick={() => handleExport('csv')}
-            disabled={exporting || total === 0}
-            className="px-4 py-2 text-sm font-medium rounded-lg flex items-center gap-2 border border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Download className="w-4 h-4" />
-            CSV
-          </button>
-          <button
-            onClick={() => handleExport('zip')}
-            disabled={exporting || total === 0}
-            className="px-4 py-2 text-sm font-medium rounded-lg flex items-center gap-2 border border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Download className="w-4 h-4" />
-            ZIP
-          </button>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
