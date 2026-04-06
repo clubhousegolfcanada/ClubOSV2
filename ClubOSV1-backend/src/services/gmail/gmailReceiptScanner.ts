@@ -79,8 +79,35 @@ const SKIP_EXTENSIONS = new Set([
 ]);
 // Only process these MIME types — everything else is skipped
 const PROCESSABLE_MIME_PREFIXES = ['image/', 'application/pdf'];
-const MIN_ATTACHMENT_SIZE = 5_000;     // 5KB — skip tiny files
+const MIN_PDF_SIZE = 5_000;            // 5KB — skip tiny PDFs
+const MIN_IMAGE_SIZE = 30_000;         // 30KB — skip signature images/logos (real receipt photos are 50KB+)
 const MAX_ATTACHMENT_SIZE = 25_000_000; // 25MB — skip huge files
+
+// Filename patterns that indicate signature/logo images, NOT receipts
+const SIGNATURE_IMAGE_PATTERNS = [
+  /logo/i, /banner/i, /icon/i, /signature/i, /badge/i, /avatar/i,
+  /facebook/i, /twitter/i, /linkedin/i, /instagram/i, /youtube/i,
+  /tiktok/i, /pinterest/i, /snapchat/i, /social/i,
+  /header/i, /footer/i, /spacer/i, /divider/i, /separator/i,
+  /pixel/i, /tracking/i, /beacon/i, /1x1/i,
+  /^image\d{3}\./i,  // image001.png, image002.jpg — Outlook inline images
+  /unnamed/i,
+];
+
+/** Check if an image attachment is likely a signature/logo rather than a receipt */
+function isLikelySignatureImage(att: GmailAttachment): boolean {
+  // PDFs are never signatures
+  if (att.mimeType === 'application/pdf') return false;
+
+  // Inline images (embedded in email body via cid:) are almost always signatures
+  if (att.isInline) return true;
+
+  // Check filename against signature patterns
+  const name = att.filename.toLowerCase();
+  if (SIGNATURE_IMAGE_PATTERNS.some(pattern => pattern.test(name))) return true;
+
+  return false;
+}
 
 // --- OAuth2 Setup ---
 
@@ -191,6 +218,7 @@ interface GmailAttachment {
   mimeType: string;
   size: number;
   attachmentId: string;
+  isInline: boolean;    // Content-Disposition: inline OR has Content-ID (embedded in email body)
 }
 
 function extractAttachments(payload: any): GmailAttachment[] {
@@ -198,11 +226,18 @@ function extractAttachments(payload: any): GmailAttachment[] {
 
   function walk(part: any) {
     if (part.filename && part.body?.attachmentId) {
+      // Check MIME headers to detect inline/embedded images (signatures, logos)
+      const headers: Array<{ name: string; value: string }> = part.headers || [];
+      const contentDisposition = headers.find((h: any) => h.name?.toLowerCase() === 'content-disposition')?.value || '';
+      const contentId = headers.find((h: any) => h.name?.toLowerCase() === 'content-id')?.value || '';
+      const isInline = contentDisposition.toLowerCase().startsWith('inline') || !!contentId;
+
       attachments.push({
         filename: part.filename,
         mimeType: part.mimeType || 'application/octet-stream',
         size: part.body.size || 0,
         attachmentId: part.body.attachmentId,
+        isInline,
       });
     }
     if (part.parts) {
@@ -465,12 +500,26 @@ async function processMessage(
   for (const att of attachments) {
     const ext = path.extname(att.filename).toLowerCase();
     if (SKIP_EXTENSIONS.has(ext)) continue;
-    if (att.size < MIN_ATTACHMENT_SIZE || att.size > MAX_ATTACHMENT_SIZE) continue;
+    if (att.size > MAX_ATTACHMENT_SIZE) continue;
+
+    // Size check — PDFs can be small (5KB), but images must be 30KB+ to skip signature logos
+    const isImage = att.mimeType.startsWith('image/');
+    const minSize = isImage ? MIN_IMAGE_SIZE : MIN_PDF_SIZE;
+    if (att.size < minSize) {
+      logger.info(`Skipping small ${isImage ? 'image' : 'file'}: ${att.filename} (${att.size} bytes < ${minSize})`);
+      continue;
+    }
 
     // MIME type check — only process images and PDFs
     const isProcessable = PROCESSABLE_MIME_PREFIXES.some(prefix => att.mimeType.startsWith(prefix));
     if (!isProcessable) {
       logger.info(`Skipping non-processable attachment: ${att.filename} (${att.mimeType})`);
+      continue;
+    }
+
+    // Signature/logo detection — skip inline images and known signature patterns
+    if (isLikelySignatureImage(att)) {
+      logger.info(`Skipping signature/logo image: ${att.filename} (inline=${att.isInline}, size=${att.size})`);
       continue;
     }
 

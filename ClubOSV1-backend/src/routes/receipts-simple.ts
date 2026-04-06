@@ -184,7 +184,7 @@ router.get('/export', authenticate, async (req: Request, res: Response) => {
         const weekStart = new Date(now);
         weekStart.setDate(now.getDate() - now.getDay());
         weekStart.setHours(0, 0, 0, 0);
-        dateFilter = 'WHERE r.created_at >= $1';
+        dateFilter = 'WHERE COALESCE(r.purchase_date, r.created_at::date) >= $1';
         queryParams = [weekStart.toISOString()];
         periodLabel = `week_of_${format(weekStart, 'yyyy_MM_dd')}`;
         break;
@@ -193,12 +193,12 @@ router.get('/export', authenticate, async (req: Request, res: Response) => {
         if (year && month) {
           const customMonthStart = new Date(parseInt(year as string), parseInt(month as string) - 1, 1);
           const customMonthEnd = new Date(parseInt(year as string), parseInt(month as string), 0, 23, 59, 59);
-          dateFilter = 'WHERE r.created_at >= $1 AND r.created_at <= $2';
+          dateFilter = 'WHERE COALESCE(r.purchase_date, r.created_at::date) >= $1 AND COALESCE(r.purchase_date, r.created_at::date) <= $2';
           queryParams = [customMonthStart.toISOString(), customMonthEnd.toISOString()];
           periodLabel = `${year}_${String(month).padStart(2, '0')}`;
         } else {
           const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-          dateFilter = 'WHERE r.created_at >= $1';
+          dateFilter = 'WHERE COALESCE(r.purchase_date, r.created_at::date) >= $1';
           queryParams = [monthStart.toISOString()];
           periodLabel = format(now, 'yyyy_MM');
         }
@@ -208,12 +208,12 @@ router.get('/export', authenticate, async (req: Request, res: Response) => {
         if (year) {
           const customYearStart = new Date(parseInt(year as string), 0, 1);
           const customYearEnd = new Date(parseInt(year as string), 11, 31, 23, 59, 59);
-          dateFilter = 'WHERE r.created_at >= $1 AND r.created_at <= $2';
+          dateFilter = 'WHERE COALESCE(r.purchase_date, r.created_at::date) >= $1 AND COALESCE(r.purchase_date, r.created_at::date) <= $2';
           queryParams = [customYearStart.toISOString(), customYearEnd.toISOString()];
           periodLabel = year as string;
         } else {
           const yearStart = new Date(now.getFullYear(), 0, 1);
-          dateFilter = 'WHERE r.created_at >= $1';
+          dateFilter = 'WHERE COALESCE(r.purchase_date, r.created_at::date) >= $1';
           queryParams = [yearStart.toISOString()];
           periodLabel = String(now.getFullYear());
         }
@@ -231,7 +231,7 @@ router.get('/export', authenticate, async (req: Request, res: Response) => {
     const receiptsQuery = `
       SELECT
         r.id, r.file_name, r.file_size, r.mime_type, r.vendor, r.amount_cents, r.tax_cents,
-        r.hst_cents, r.hst_reg_number, r.purchase_date, r.club_location, r.category,
+        r.hst_cents, r.hst_reg_number, r.subtotal_cents, r.purchase_date, r.club_location, r.category,
         r.payment_method, r.notes, r.ocr_status, r.reconciled, r.reconciled_at,
         r.reconciled_by, r.uploader_user_id, r.created_at, r.updated_at, r.source,
         r.is_personal_card, r.content_hash,

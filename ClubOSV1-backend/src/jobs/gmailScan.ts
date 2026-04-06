@@ -1,5 +1,6 @@
 import cron from 'node-cron';
 import { logger } from '../utils/logger';
+import { slackFallback } from '../services/slackFallback';
 
 class GmailScanJob {
   private isRunning = false;
@@ -27,8 +28,28 @@ class GmailScanJob {
         const { runGmailScan } = await import('../services/gmail/gmailReceiptScanner');
         const result = await runGmailScan();
         logger.info(`✅ Gmail scan complete: ${result.emailsScanned} emails scanned, ${result.receiptsCreated} receipts created, ${result.duplicatesSkipped} duplicates skipped`);
+
+        // Notify Slack on successful scan with results
+        if (result.receiptsCreated > 0) {
+          try {
+            await slackFallback.sendMessage({
+              channel: '#tech-alerts',
+              username: 'ClubOS Receipts',
+              text: `📧 Gmail scan complete: ${result.receiptsCreated} new receipt${result.receiptsCreated !== 1 ? 's' : ''} imported (${result.emailsScanned} emails scanned)`
+            });
+          } catch (_) { /* Slack notification is best-effort */ }
+        }
       } catch (error) {
         logger.error('❌ Scheduled Gmail scan failed:', error);
+
+        // Alert Slack so scan failures don't go unnoticed
+        try {
+          await slackFallback.sendMessage({
+            channel: '#tech-alerts',
+            username: 'ClubOS Receipts',
+            text: `⚠️ Scheduled Gmail receipt scan failed: ${(error as Error).message || 'Unknown error'}. Check Railway logs.`
+          });
+        } catch (_) { /* Slack notification is best-effort */ }
       } finally {
         this.isRunning = false;
       }

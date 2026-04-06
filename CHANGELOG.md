@@ -2,6 +2,14 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.32.4] - 2026-04-06
+
+### Fixed — Receipts Export & Gmail Scanner Improvements
+- **Export date filter mismatch fixed** — The export endpoint filtered by `created_at` (upload date) while the table/summary filtered by `purchase_date`. Exporting "March 2026" would miss receipts purchased in March but uploaded in April, and include receipts uploaded in March but purchased in February. All three endpoints now use `COALESCE(purchase_date, created_at::date)` consistently.
+- **Export subtotal column fixed** — CSV export always showed $0.00 for Subtotal because `subtotal_cents` was missing from the export SQL query. Now included.
+- **Gmail scanner skips signature images** — The scanner was importing email signature logos, social media icons, and inline images as receipts. Now detects inline images via Content-Disposition/Content-ID MIME headers, filters out common signature filename patterns (logo, banner, icon, facebook, linkedin, image001, etc.), and raises the minimum image size from 5KB to 30KB (real receipt photos are 50KB+). PDFs still process at 5KB minimum.
+- **Gmail scan Slack notifications** — Daily cron scan now posts to #tech-alerts on success (with receipt count) and on failure (with error message). Previously failures were only visible in Railway logs.
+
 ## [1.32.3] - 2026-04-06
 
 ### Fixed — ClubAI TrackMan Restart Flow Improvements
