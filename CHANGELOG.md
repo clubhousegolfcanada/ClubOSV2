@@ -2,6 +2,11 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.33.2] - 2026-04-06
+
+### Fixed — ClubAI Duplicate Response Prevention
+- **ClubAI no longer double-responds when a customer sends two texts in quick succession** — If a customer sent "Thanks!" then "Great time!!!" more than 3 seconds apart, both messages independently completed the debounce window and each triggered a ClubAI response (e.g. "No worries! - ClubAI" sent twice). Now, after the debounce, ClubAI checks if it already sent a response in the last 10 seconds. If it did and no new customer message arrived after, the second response is skipped. If the customer sends follow-up context (e.g. location info after a restart request), ClubAI still responds with full conversation context. Guard added to both existing-conversation and new-conversation webhook paths.
+
 ## [1.33.1] - 2026-04-06
 
 ### Fixed — Receipt Image Compression

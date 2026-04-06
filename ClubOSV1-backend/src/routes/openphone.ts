@@ -1115,6 +1115,27 @@ router.post('/webhook', async (req: Request, res: Response) => {
                     return res.json({ success: true, message: 'Conversation locked during debounce' });
                   }
 
+                  // DUPLICATE-RESPONSE GUARD: If ClubAI already sent a message in the
+                  // last 10 seconds AND no new customer message arrived after it, skip.
+                  // This catches the case where a customer sends two texts >3s apart
+                  // (e.g. "Thanks!" then "Great time!!!") — both pass the debounce
+                  // independently, but the second one should not double-respond.
+                  // If the customer DID send follow-up context after the AI response,
+                  // we proceed so ClubAI can incorporate the new info.
+                  const recentAiCheck = await db.query(`
+                    SELECT sender_type, created_at FROM conversation_messages
+                    WHERE conversation_id = $1
+                    ORDER BY created_at DESC, id DESC LIMIT 1
+                  `, [convId]);
+                  if (recentAiCheck.rows[0]?.sender_type === 'ai'
+                      && new Date(recentAiCheck.rows[0].created_at).getTime() > Date.now() - 10000) {
+                    logger.info('[ClubAI] Already responded in last 10s, skipping duplicate', {
+                      phoneNumber, convId,
+                      lastAiAt: recentAiCheck.rows[0].created_at,
+                    });
+                    return res.json({ success: true, message: 'ClubAI already responded to this batch' });
+                  }
+
                   const clubaiResult = await clubaiService.generateResponse(
                     phoneNumber, messageText, convId
                   );
@@ -1486,6 +1507,23 @@ router.post('/webhook', async (req: Request, res: Response) => {
                       latestMessageId: newLatestCheck.rows[0]?.id,
                     });
                     return res.json({ success: true, message: 'Deferred to newer message' });
+                  }
+
+                  // DUPLICATE-RESPONSE GUARD (new conversation path):
+                  // Same protection as existing-conversation path — if ClubAI already
+                  // responded in the last 10s and no new customer message followed, skip.
+                  const recentAiCheckNew = await db.query(`
+                    SELECT sender_type, created_at FROM conversation_messages
+                    WHERE conversation_id = $1
+                    ORDER BY created_at DESC, id DESC LIMIT 1
+                  `, [String(newConvId)]);
+                  if (recentAiCheckNew.rows[0]?.sender_type === 'ai'
+                      && new Date(recentAiCheckNew.rows[0].created_at).getTime() > Date.now() - 10000) {
+                    logger.info('[ClubAI] Already responded in last 10s (new conv), skipping duplicate', {
+                      phoneNumber,
+                      lastAiAt: recentAiCheckNew.rows[0].created_at,
+                    });
+                    return res.json({ success: true, message: 'ClubAI already responded to this batch' });
                   }
 
                   const clubaiResult = await clubaiService.generateResponse(phoneNumber, newMessageText, String(newConvId));
