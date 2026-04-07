@@ -199,10 +199,12 @@ export const MessagesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
-    // Small delay to ensure auth is settled before first check
+    // PERF: Delay initial unread count check so page-specific data fetches
+    // (tickets, dashboard, etc.) get priority on the backend DB connection pool.
+    // A 2s delay on the nav badge is imperceptible; a 2s faster page load is not.
     const initialTimer = setTimeout(() => {
       refreshUnreadCount();
-    }, 100);
+    }, 2000);
 
     // Check every 15 seconds for faster notification of new messages
     intervalRef.current = setInterval(() => {

@@ -17,7 +17,7 @@ const pool = new Pool({
   connectionString: dbUrl,
   ssl: dbUrl.includes('railway') ? { rejectUnauthorized: false } : false,
   max: 30, // Increased for 500+ concurrent customers (Railway Pro supports up to 100)
-  idleTimeoutMillis: 10000, // 10 seconds idle timeout
+  idleTimeoutMillis: 30000, // 30 seconds idle timeout — keeps connections warm between page navigations
   connectionTimeoutMillis: 5000,
   // Additional performance settings
   statement_timeout: 30000, // 30 second query timeout

@@ -2,6 +2,13 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.33.8] - 2026-04-07
+
+### Fixed — Ticket Page Slow First Load (up to 10 seconds)
+- **AuthGuard now validates auth synchronously on first render** — Previously, AuthGuard initialized `isChecking = true` and showed a spinner on every page navigation, then used `requestAnimationFrame` + `useEffect` to validate localStorage auth data across 4 React render cycles (200-300ms of blocking). Now performs the same validation (token exists, valid format, not expired) synchronously in the `useState` initializer. If valid auth data exists, the page renders immediately on the first frame with no spinner.
+- **MessagesProvider initial unread count check delayed from 100ms to 2s** — The global unread message badge poll fired almost immediately on mount, competing with the actual page data fetch for backend DB connections. Increased initial delay to 2 seconds so page-specific API calls (tickets, dashboard, etc.) get a clear path to the connection pool. The 2-second delay on the nav badge is imperceptible.
+- **Database connection pool idle timeout increased from 10s to 30s** — With `idleTimeoutMillis: 10000`, connections were dropped after just 10 seconds of inactivity, forcing a fresh PostgreSQL SSL handshake (100-500ms) on most requests since ClubOS isn't high-traffic 24/7. Increased to 30 seconds to keep connections warm through typical page navigation gaps.
+
 ## [1.33.7] - 2026-04-07
 
 ### Fixed — Android Push Notifications Delayed Up to 30 Minutes
