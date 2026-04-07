@@ -55,10 +55,10 @@ const commands: Command[] = [
   {
     id: 'black-screen',
     name: 'Black Screen Issue',
-    description: 'Screen is black or not displaying properly in one of the simulator bays',
+    description: 'Screen is black or not displaying properly in one of the simulator boxes',
     category: 'techsupport',
     type: 'issue-report',
-    example: 'The screen is black in bay 4',
+    example: 'The screen is black in box 4',
     keywords: ['black screen', 'no display', 'monitor off'],
     usageCount: 45
   },
@@ -75,10 +75,10 @@ const commands: Command[] = [
   {
     id: 'no-sound',
     name: 'Audio/Sound Issues',
-    description: 'No sound or audio problems in simulator bays',
+    description: 'No sound or audio problems in simulator boxes',
     category: 'techsupport',
     type: 'issue-report',
-    example: 'No sound coming from bay 2',
+    example: 'No sound coming from box 2',
     keywords: ['no sound', 'audio', 'speakers', 'volume'],
     usageCount: 12
   },
@@ -88,7 +88,7 @@ const commands: Command[] = [
     description: 'Ball flight or distances seem incorrect',
     category: 'techsupport',
     type: 'issue-report',
-    example: 'Shots are showing way too short in bay 5',
+    example: 'Shots are showing way too short in box 5',
     keywords: ['calibration', 'wrong distance', 'inaccurate'],
     usageCount: 28
   },
@@ -194,7 +194,7 @@ const commands: Command[] = [
     description: 'Adjust heating or cooling in specific areas',
     category: 'facilities',
     type: 'action-request',
-    example: 'Bay 3 is too cold',
+    example: 'Box 3 is too cold',
     keywords: ['temperature', 'cold', 'hot', 'hvac', 'ac', 'heat'],
     usageCount: 34
   },
@@ -204,7 +204,7 @@ const commands: Command[] = [
     description: 'Report or inquire about lost items',
     category: 'facilities',
     type: 'action-request',
-    example: 'I left my phone in bay 2',
+    example: 'I left my phone in box 2',
     keywords: ['lost', 'found', 'missing', 'left behind'],
     usageCount: 23
   },
@@ -212,7 +212,7 @@ const commands: Command[] = [
   // Automated Simulator Resets - Bedford
   {
     id: 'reset-bedford-bay1',
-    name: 'Bedford Bay 1',
+    name: 'Bedford Box 1',
     description: 'Reset TrackMan at Bedford location',
     category: 'resets',
     type: 'action',
@@ -223,7 +223,7 @@ const commands: Command[] = [
   },
   {
     id: 'reset-bedford-bay2',
-    name: 'Bedford Bay 2',
+    name: 'Bedford Box 2',
     description: 'Reset TrackMan at Bedford location',
     category: 'resets',
     type: 'action',
@@ -258,7 +258,7 @@ const commands: Command[] = [
   // Automated Simulator Resets - Dartmouth
   {
     id: 'reset-dartmouth-bay1',
-    name: 'Dartmouth Bay 1',
+    name: 'Dartmouth Box 1',
     description: 'Reset TrackMan at Dartmouth location',
     category: 'resets',
     type: 'action',
@@ -269,7 +269,7 @@ const commands: Command[] = [
   },
   {
     id: 'reset-dartmouth-bay2',
-    name: 'Dartmouth Bay 2',
+    name: 'Dartmouth Box 2',
     description: 'Reset TrackMan at Dartmouth location',
     category: 'resets',
     type: 'action',
@@ -280,7 +280,7 @@ const commands: Command[] = [
   },
   {
     id: 'reset-dartmouth-bay3',
-    name: 'Dartmouth Bay 3',
+    name: 'Dartmouth Box 3',
     description: 'Reset TrackMan at Dartmouth location',
     category: 'resets',
     type: 'action',
@@ -291,7 +291,7 @@ const commands: Command[] = [
   },
   {
     id: 'reset-dartmouth-bay4',
-    name: 'Dartmouth Bay 4',
+    name: 'Dartmouth Box 4',
     description: 'Reset TrackMan at Dartmouth location',
     category: 'resets',
     type: 'action',
@@ -329,7 +329,7 @@ const commands: Command[] = [
   // Automated Simulator Resets - Bayers Lake
   {
     id: 'reset-bayerslake-bay1',
-    name: 'Bayers Lake Bay 1',
+    name: 'Bayers Lake Box 1',
     description: 'Reset TrackMan at Bayers Lake location',
     category: 'resets',
     type: 'action',
@@ -340,7 +340,7 @@ const commands: Command[] = [
   },
   {
     id: 'reset-bayerslake-bay2',
-    name: 'Bayers Lake Bay 2',
+    name: 'Bayers Lake Box 2',
     description: 'Reset TrackMan at Bayers Lake location',
     category: 'resets',
     type: 'action',
@@ -351,7 +351,7 @@ const commands: Command[] = [
   },
   {
     id: 'reset-bayerslake-bay3',
-    name: 'Bayers Lake Bay 3',
+    name: 'Bayers Lake Box 3',
     description: 'Reset TrackMan at Bayers Lake location',
     category: 'resets',
     type: 'action',
@@ -362,7 +362,7 @@ const commands: Command[] = [
   },
   {
     id: 'reset-bayerslake-bay4',
-    name: 'Bayers Lake Bay 4',
+    name: 'Bayers Lake Box 4',
     description: 'Reset TrackMan at Bayers Lake location',
     category: 'resets',
     type: 'action',
@@ -397,7 +397,7 @@ const commands: Command[] = [
   // Automated Simulator Resets - Truro
   {
     id: 'reset-truro-bay1',
-    name: 'Truro Bay 1',
+    name: 'Truro Box 1',
     description: 'Reset TrackMan at Truro location',
     category: 'resets',
     type: 'action',
@@ -408,7 +408,7 @@ const commands: Command[] = [
   },
   {
     id: 'reset-truro-bay2',
-    name: 'Truro Bay 2',
+    name: 'Truro Box 2',
     description: 'Reset TrackMan at Truro location',
     category: 'resets',
     type: 'action',
@@ -419,7 +419,7 @@ const commands: Command[] = [
   },
   {
     id: 'reset-truro-bay3',
-    name: 'Truro Bay 3',
+    name: 'Truro Box 3',
     description: 'Reset TrackMan at Truro location',
     category: 'resets',
     type: 'action',
@@ -454,7 +454,7 @@ const commands: Command[] = [
   // Automated Simulator Resets - River Oaks
   {
     id: 'reset-riveroaks-bay1',
-    name: 'River Oaks Bay 1',
+    name: 'River Oaks Box 1',
     description: 'Reset TrackMan at River Oaks location',
     category: 'resets',
     type: 'action',
@@ -462,17 +462,6 @@ const commands: Command[] = [
     action: 'ninjaone',
     location: 'River Oaks',
     bayNumber: '1'
-  },
-  {
-    id: 'reset-riveroaks-bay2',
-    name: 'River Oaks Bay 2',
-    description: 'Reset TrackMan at River Oaks location',
-    category: 'resets',
-    type: 'action',
-    keywords: ['reset', 'restart', 'trackman', 'river oaks', 'bay 2'],
-    action: 'ninjaone',
-    location: 'River Oaks',
-    bayNumber: '2'
   },
   {
     id: 'reset-riveroaks-music',
@@ -488,16 +477,16 @@ const commands: Command[] = [
   {
     id: 'reset-all-trackman',
     name: 'Reset All TrackMan Systems',
-    description: 'Remotely restart all TrackMan software across all bays',
+    description: 'Remotely restart all TrackMan software across all boxes',
     category: 'resets',
     type: 'action',
-    keywords: ['reset', 'restart', 'trackman', 'all bays'],
+    keywords: ['reset', 'restart', 'trackman', 'all bays', 'all boxes'],
     action: 'ninjaone'
   },
   {
     id: 'reboot-simulator-pc',
     name: 'Reboot Simulator PC',
-    description: 'Fully reboot a simulator PC (specify bay in request)',
+    description: 'Fully reboot a simulator PC (specify box in request)',
     category: 'resets',
     type: 'action',
     keywords: ['reboot', 'restart', 'pc', 'computer'],
@@ -618,7 +607,7 @@ export default function CommandsRedesigned() {
 
   const handleExecuteReset = async (trigger: Command) => {
     const confirmMessage = trigger.bayNumber 
-      ? `Reset TrackMan on ${trigger.location} Bay ${trigger.bayNumber}?`
+      ? `Reset TrackMan on ${trigger.location} Box ${trigger.bayNumber}?`
       : `Reset ${trigger.systemType} system at ${trigger.location}?`;
       
     if (!confirm(confirmMessage)) return;
@@ -842,15 +831,15 @@ export default function CommandsRedesigned() {
                               <h3 className="text-base font-medium text-[var(--text-primary)]">{location}</h3>
                             </div>
                             
-                            {/* Bay Controls */}
+                            {/* Box Controls */}
                             {locationData.bays.length > 0 && (
                               <div className="space-y-2 mb-3">
-                                <p className="text-xs text-[var(--text-secondary)] font-light">Bay Controls</p>
+                                <p className="text-xs text-[var(--text-secondary)] font-light">Box Controls</p>
                                 <div className="space-y-1.5">
                                   {locationData.bays.sort((a, b) => parseInt(a.bayNumber!) - parseInt(b.bayNumber!)).map((trigger) => (
                                     <div key={trigger.id} className="bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded-lg p-2">
                                       <div className="flex items-center justify-between mb-1.5">
-                                        <span className="text-xs font-medium text-[var(--text-primary)]">Bay {trigger.bayNumber}</span>
+                                        <span className="text-xs font-medium text-[var(--text-primary)]">Box {trigger.bayNumber}</span>
                                       </div>
                                       <div className="grid grid-cols-3 gap-1.5">
                                         <button
@@ -862,7 +851,7 @@ export default function CommandsRedesigned() {
                                         </button>
                                         <button
                                           onClick={async () => {
-                                            if (!confirm(`⚠️ This will fully restart the PC for ${trigger.location} Bay ${trigger.bayNumber}. The bay will be unavailable for 3-5 minutes. Continue?`)) {
+                                            if (!confirm(`⚠️ This will fully restart the PC for ${trigger.location} Box ${trigger.bayNumber}. The box will be unavailable for 3-5 minutes. Continue?`)) {
                                               return;
                                             }
                                             const toastId = toast.loading(`Rebooting PC...`);
@@ -872,7 +861,7 @@ export default function CommandsRedesigned() {
                                                 location: trigger.location!,
                                                 bayNumber: trigger.bayNumber || ''
                                               });
-                                              toast.success('PC reboot initiated. Bay will be back online in 3-5 minutes.', { 
+                                              toast.success('PC reboot initiated. Box will be back online in 3-5 minutes.', { 
                                                 id: toastId,
                                                 duration: 10000 
                                               });
@@ -890,7 +879,7 @@ export default function CommandsRedesigned() {
                                             openRemoteDesktopForBay(trigger.location!, trigger.bayNumber!);
                                           }}
                                           className="flex flex-col items-center gap-0.5 p-1.5 bg-[var(--bg-secondary)] hover:bg-blue-500 border border-blue-500/50 hover:border-blue-500 rounded transition-all group/btn text-xs"
-                                          title={`Remote desktop to ${trigger.location} Bay ${trigger.bayNumber}`}
+                                          title={`Remote desktop to ${trigger.location} Box ${trigger.bayNumber}`}
                                         >
                                           <MonitorSmartphone className="w-3 h-3 text-[var(--text-muted)] group-hover/btn:text-white" />
                                           <span className="text-[10px] text-[var(--text-secondary)] group-hover/btn:text-white">Remote</span>
@@ -997,7 +986,7 @@ export default function CommandsRedesigned() {
                 <>
                   <li className="flex items-start">
                     <span className="text-[var(--accent)] mr-2">•</span>
-                    When reporting issues, always include the bay number or location
+                    When reporting issues, always include the box number or location
                   </li>
                   <li className="flex items-start">
                     <span className="text-[var(--accent)] mr-2">•</span>
@@ -1016,7 +1005,7 @@ export default function CommandsRedesigned() {
                   </li>
                   <li className="flex items-start">
                     <span className="text-[var(--accent)] mr-2">•</span>
-                    TrackMan resets will close and restart the software on the specified bay
+                    TrackMan resets will close and restart the software on the specified box
                   </li>
                   <li className="flex items-start">
                     <span className="text-[var(--accent)] mr-2">•</span>

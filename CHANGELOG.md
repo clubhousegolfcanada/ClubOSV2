@@ -11,6 +11,8 @@ All notable changes to ClubOS will be documented in this file.
 - **Removed RecentCustomers** — Was fully disabled (API code commented out, always returned empty array) to prevent rate-limit exhaustion from duplicate calls with MessagesCard.
 - **Deleted `systemStatus.ts` API file** — Only consumer was OccupancyMap. RemoteActionsBar imported it but never used it (already had "locationStatuses removed" comment). Cleaned up the dead import.
 - **Removed CommandShortcutBar floating buttons** — Three fixed-position buttons (Alert Staff, Create Checklist, Upload Knowledge) floating on the right edge of the dashboard. All actions are accessible from their respective pages.
+- **Fixed River Oaks showing 2 boxes on commands page** — River Oaks only has 1 simulator box, not 2. Removed the incorrect Bay 2 entry.
+- **Renamed "Bay" to "Box" on commands page** — All user-facing labels, descriptions, examples, tooltips, and confirmation dialogs now say "Box" instead of "Bay" to match actual facility terminology.
 
 ## [1.33.9] - 2026-04-07
 
