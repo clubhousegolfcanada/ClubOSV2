@@ -55,11 +55,39 @@ function AppContent({ Component, pageProps }: AppContentProps) {
       initializeCSRF().catch((error) => logger.error('CSRF initialization failed', error));
     }
     
-    // Register service worker for PWA and push notifications
+    // Register service worker for PWA and push notifications.
+    // For home-screen PWAs on Android, Chrome only auto-checks for SW updates
+    // every ~24 hours or on navigation. We force an update check on every app
+    // launch so push notification fixes deploy within minutes, not days.
     if ('serviceWorker' in navigator && typeof window !== 'undefined') {
       navigator.serviceWorker.register('/sw.js')
         .then(registration => {
           logger.debug('Service Worker registered:', registration.scope);
+
+          // Force immediate update check on launch
+          registration.update().catch(() => {});
+
+          // Also check periodically while the app is open (every 30 minutes).
+          // Covers long PWA sessions where the user never navigates away.
+          setInterval(() => {
+            registration.update().catch(() => {});
+          }, 30 * 60 * 1000);
+
+          // When a new SW is waiting, tell it to activate immediately.
+          // Combined with skipWaiting() in sw.js, this ensures the update
+          // takes effect without the user closing and reopening the PWA.
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  // New SW installed while old one is running — activate it
+                  newWorker.postMessage({ type: 'SKIP_WAITING' });
+                  logger.debug('New service worker installed, activating');
+                }
+              });
+            }
+          });
         })
         .catch(error => {
           logger.error('Service Worker registration failed:', error);

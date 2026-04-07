@@ -2,6 +2,11 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.33.6] - 2026-04-07
+
+### Fixed — PWA Service Worker Auto-Update for Home Screen Installs
+- **Service worker now force-checks for updates on every PWA launch** — Home-screen PWAs on Android only auto-check for SW updates every ~24 hours. This meant push notification fixes could take a full day to reach users. Now calls `registration.update()` immediately on app mount, and every 30 minutes while the app is open. When a new SW is detected, it's told to activate immediately via `SKIP_WAITING` message — no need to close and reopen the app.
+
 ## [1.33.5] - 2026-04-07
 
 ### Fixed — Android Push Notification Reliability
