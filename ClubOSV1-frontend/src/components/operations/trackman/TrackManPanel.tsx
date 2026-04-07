@@ -262,11 +262,17 @@ export function TrackManPanel() {
               Enabled
             </label>
             <div className="flex items-center gap-2">
-              <label className="text-sm text-[var(--text-secondary)]">Cron:</label>
-              <input type="text" value={settings.cron}
-                onChange={(e) => setSettings({ ...settings, cron: e.target.value })}
-                className="px-2 py-1 text-sm bg-[var(--bg-primary)] border border-[var(--border)] rounded w-32 text-[var(--text-primary)]" />
-              <span className="text-xs text-[var(--text-secondary)]">{cronToHuman(settings.cron)}</span>
+              <label className="text-sm text-[var(--text-secondary)]">Restart at:</label>
+              <select value={(() => { const parts = settings.cron.split(' '); return parts.length === 5 ? parts[1] : '3'; })()}
+                onChange={(e) => setSettings({ ...settings, cron: `0 ${e.target.value} * * *` })}
+                className="px-2 py-1 text-sm bg-[var(--bg-primary)] border border-[var(--border)] rounded text-[var(--text-primary)]">
+                {Array.from({ length: 24 }, (_, i) => {
+                  const ampm = i >= 12 ? 'PM' : 'AM';
+                  const h12 = i === 0 ? 12 : i > 12 ? i - 12 : i;
+                  return <option key={i} value={String(i)}>{h12}:00 {ampm}</option>;
+                })}
+              </select>
+              <span className="text-xs text-[var(--text-secondary)]">Daily</span>
             </div>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={settings.notify_slack}
@@ -301,7 +307,7 @@ export function TrackManPanel() {
               </select>
             </div>
             <div>
-              <label className="block text-xs text-[var(--text-secondary)] mb-1">Bay / Box</label>
+              <label className="block text-xs text-[var(--text-secondary)] mb-1">Box</label>
               <select value={newDevice.bay_number}
                 onChange={(e) => {
                   const bay = e.target.value;
@@ -311,7 +317,7 @@ export function TrackManPanel() {
                 }}
                 className="w-full px-3 py-2 text-sm bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg text-[var(--text-primary)]">
                 {Array.from({ length: (locationConfigs.find(l => l.name === newDevice.location)?.bays || 2) }, (_, i) => (
-                  <option key={i + 1} value={String(i + 1)}>Bay {i + 1}</option>
+                  <option key={i + 1} value={String(i + 1)}>Box {i + 1}</option>
                 ))}
               </select>
             </div>
@@ -399,7 +405,7 @@ export function TrackManPanel() {
                       </div>
                       {device.bay_number && (
                         <div className="flex justify-between">
-                          <span>Bay</span><span>{device.bay_number}</span>
+                          <span>Box</span><span>{device.bay_number}</span>
                         </div>
                       )}
                       {device.tps_version && (

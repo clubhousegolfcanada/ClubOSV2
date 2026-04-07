@@ -280,8 +280,16 @@ router.put('/settings', authenticate, async (req: Request, res: Response) => {
       [JSON.stringify(value)]
     );
 
+    // Reload the cron job so the new schedule takes effect immediately
+    try {
+      const { trackmanRestartJob } = await import('../jobs/trackmanRestart');
+      await trackmanRestartJob.reload();
+    } catch (reloadError) {
+      logger.error('Failed to reload TrackMan cron job after settings update:', reloadError);
+    }
+
     logger.info(`TrackMan auto-restart settings updated by ${req.user.email}: ${JSON.stringify(value)}`);
-    return res.json({ success: true, data: value, message: 'Settings saved. Restart the cron job to apply.' });
+    return res.json({ success: true, data: value, message: 'Settings saved and schedule updated.' });
   } catch (error: any) {
     logger.error('Error updating trackman settings:', error);
     return res.status(500).json({ success: false, error: 'Failed to update settings' });

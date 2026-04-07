@@ -13,6 +13,8 @@ All notable changes to ClubOS will be documented in this file.
 - **Removed CommandShortcutBar floating buttons** — Three fixed-position buttons (Alert Staff, Create Checklist, Upload Knowledge) floating on the right edge of the dashboard. All actions are accessible from their respective pages.
 - **Fixed River Oaks showing 2 boxes on commands page** — River Oaks only has 1 simulator box, not 2. Removed the incorrect Bay 2 entry.
 - **Renamed "Bay" to "Box" on commands page** — All user-facing labels, descriptions, examples, tooltips, and confirmation dialogs now say "Box" instead of "Bay" to match actual facility terminology.
+- **Fixed TrackMan auto-restart schedule not applying until server restart** — Saving new settings from the UI wrote to the database but never called `trackmanRestartJob.reload()`, so the cron schedule only took effect after a deploy. Now reloads the job immediately after saving.
+- **Replaced raw cron input with time picker on TrackMan page** — The "Cron:" text field exposing raw cron syntax (`0 3 * * *`) has been replaced with a simple hour dropdown ("Restart at: 3:00 AM Daily"). Also renamed "Bay" labels to "Box" on the TrackMan panel.
 
 ## [1.33.9] - 2026-04-07
 
