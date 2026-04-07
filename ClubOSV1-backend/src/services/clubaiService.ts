@@ -284,6 +284,44 @@ export async function generateResponse(
     });
   }
 
+  // ZERO-CONTEXT GUARD: When RAG returned absolutely nothing (no conversation matches,
+  // no website content, no manual corrections), GPT has no external knowledge at all.
+  // Without this guard, GPT falls back to its own reasoning and confidently hallucinates
+  // answers to questions outside its system prompt (e.g. "will you stream the Masters?").
+  // We inject a hard instruction limiting GPT to ONLY topics explicitly covered in its
+  // core instructions. Anything else must be escalated.
+  if (ragContext.knowledgeIds.length === 0) {
+    systemContent += '\n\n---\n\n';
+    systemContent += 'IMPORTANT — ZERO KNOWLEDGE CONTEXT: Your knowledge base returned NO results for this customer\'s question. ';
+    systemContent += 'You have NO external information about this topic.\n\n';
+    systemContent += 'You may ONLY respond directly if the question is EXPLICITLY answered by your core instructions above:\n';
+    systemContent += '- TrackMan / simulator technical issues (restart steps)\n';
+    systemContent += '- WiFi password\n';
+    systemContent += '- Login / QR code / guest mode\n';
+    systemContent += '- Club rentals\n';
+    systemContent += '- Food and drink policy\n';
+    systemContent += '- Balls and equipment\n';
+    systemContent += '- How long for 18 holes\n';
+    systemContent += '- Door access troubleshooting\n';
+    systemContent += '- Booking changes or cancellations (escalate immediately)\n';
+    systemContent += '- Refund requests (escalate immediately)\n';
+    systemContent += '- Gift card issues (escalate immediately)\n';
+    systemContent += '- Device Usage Expired (escalate immediately)\n';
+    systemContent += '- Thank you / conversation closers\n\n';
+    systemContent += 'For ANY question not on this list — including events, streaming, TV, tournaments, special offers, ';
+    systemContent += 'promotions, hours changes, availability, staffing, leagues, memberships, parties, or anything ';
+    systemContent += 'else not explicitly in your core instructions — you MUST respond with:\n';
+    systemContent += '"Let me check with the team on that and get back to you!"\n';
+    systemContent += 'and add [ESCALATE TO HUMAN] with Tier: SOFT HOLD.\n\n';
+    systemContent += 'DO NOT assume, infer, or guess. If your core instructions do not explicitly cover it, escalate.\n';
+
+    logger.info('[ClubAI] Zero RAG context — injecting strict escalation guard', {
+      phoneNumber,
+      conversationId,
+      messagePreview: messageText.substring(0, 80),
+    });
+  }
+
   // Note: IMPORTANT RESPONSE RULES are now part of the editable system prompt (end of the prompt text).
   // They are no longer hardcoded here, so changes from the ClubAI Settings UI take effect immediately.
 
@@ -472,6 +510,48 @@ export async function generateResponse(
         escalationSummary: `ClubAI blocked: no knowledge context but response contained specific numbers (${responseNumbers.join(', ')}). Original: ${cleanResponse.substring(0, 200)}`,
         confidence: 0.2
       };
+    }
+
+    // ZERO-CONTEXT AFFIRMATIVE CLAIM CHECK: If RAG returned nothing and GPT still
+    // gave a confident affirmative answer (instead of escalating), block it.
+    // This is the hard safety net for the zero-context guard — catches cases where
+    // GPT ignores the system instruction and answers anyway (e.g. "Absolutely, we'll
+    // have the Masters on!"). Known-intent responses (wifi, restart steps, guest mode,
+    // club rentals, food policy, closers) are allowed through.
+    if (ragContext.knowledgeIds.length === 0) {
+      const lowerResponse = cleanResponse.toLowerCase();
+      // Known intents ClubAI can handle without RAG context (from system prompt)
+      const knownIntentPatterns = [
+        /clubgolf/i,                                    // wifi password
+        /windows key|taskbar|trackman.*icon|restart|reboot|right-click.*close/i, // trackman restart steps
+        /guest.*mode|don'?t.*need.*account|select.*guest/i,  // login/guest mode
+        /right.?hand clubs|club rental|reserve.*when.*book/i, // club rentals
+        /light food|keep it clean|no alcohol/i,          // food/drink policy
+        /about 2 hours|gimme area|putting settings/i,    // how long for 18 holes
+        /balls.*provided|designed.*protect.*screen/i,    // balls/equipment
+        /access link|spam folder|handle doesn'?t turn/i, // door access tips
+        /pass this to the team|get a team member|check with the team/i, // escalation phrases
+        /no worries|anytime|you'?re (all )?set|no problem|have a good round/i, // closers
+        /i'?m clubai|handle the quick fixes/i,           // bot disclosure
+        /what.*location|what.*box|happy to help.*sim issue.*booking/i, // clarifying questions
+      ];
+
+      const isKnownIntent = knownIntentPatterns.some(p => p.test(lowerResponse));
+
+      if (!isKnownIntent) {
+        logger.warn('[ClubAI] Zero-context affirmative claim blocked', {
+          phoneNumber,
+          conversationId,
+          responsePreview: cleanResponse.substring(0, 150),
+          messagePreview: messageText.substring(0, 80),
+        });
+        return {
+          response: "Let me check with the team on that and get back to you!",
+          escalate: true,
+          escalationSummary: `ClubAI blocked (zero knowledge context, non-standard response). Customer asked: "${messageText.substring(0, 150)}". AI would have said: "${cleanResponse.substring(0, 200)}"`,
+          confidence: 0.2
+        };
+      }
     }
 
     // Dynamic confidence scoring based on RAG quality

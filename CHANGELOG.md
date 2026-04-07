@@ -2,6 +2,11 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.33.3] - 2026-04-06
+
+### Fixed — ClubAI Hallucination on Unknown Topics
+- **ClubAI no longer confidently answers questions it has no knowledge about** — When a customer asked "will you be streaming the Masters?", ClubAI responded "Absolutely, we'll have the Masters on!" despite having zero knowledge about events or streaming. The hallucination safety net only caught fabricated numbers (prices, times, phone numbers) but missed confident yes/no claims. Added a two-layer zero-context guard: (1) when RAG returns zero matches, a hard instruction is injected telling GPT it may ONLY answer topics explicitly in its core instructions (TrackMan, WiFi, pricing, etc.) and must escalate everything else; (2) as a post-generation safety net, if zero RAG context AND the response doesn't match known-intent patterns, the response is blocked and replaced with an escalation to the team. Questions about events, streaming, tournaments, special offers, and anything else not in the system prompt now get "Let me check with the team on that and get back to you!" instead of a hallucinated answer.
+
 ## [1.33.2] - 2026-04-06
 
 ### Fixed — ClubAI Duplicate Response Prevention
