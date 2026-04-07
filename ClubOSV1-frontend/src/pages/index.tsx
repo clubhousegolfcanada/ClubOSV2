@@ -9,7 +9,6 @@ import { enforceOperatorRouteGuard } from '@/utils/customerRouteGuard';
 import { useRouter } from 'next/router';
 import { http } from '@/api/http';
 import { TrackManStatusCard } from '@/components/dashboard/TrackManStatusCard';
-import { CommandShortcutBar } from '@/components/dashboard/CommandShortcutBar';
 import MessagesCardV3 from '@/components/dashboard/MessagesCardV3';
 import { TaskList } from '@/components/dashboard/TaskList';
 import { tokenManager } from '@/utils/tokenManager';
@@ -319,8 +318,6 @@ export default function Home() {
             </div>
           </div>
 
-        {/* Command Shortcut Bar - Desktop only */}
-        <CommandShortcutBar />
     </OperatorLayout>
   );
 }
