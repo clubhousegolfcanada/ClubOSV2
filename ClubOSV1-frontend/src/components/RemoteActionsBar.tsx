@@ -3,7 +3,6 @@ import { ChevronUp, ChevronDown, Zap, RefreshCw, Monitor, Music, Tv, Loader, Loc
 import { remoteActionsAPI, RemoteActionParams } from '@/api/remoteActions';
 import { doorAccessAPI, DoorStatus } from '@/api/doorAccess';
 import { unifiDoorsAPI } from '@/api/unifiDoors';
-import { systemStatusAPI, LocationStatus } from '@/api/systemStatus';
 import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
 import { hasMinimumRole } from '@/utils/roleUtils';

@@ -8,13 +8,9 @@ import { hasMinimumRole } from '@/utils/roleUtils';
 import { enforceOperatorRouteGuard } from '@/utils/customerRouteGuard';
 import { useRouter } from 'next/router';
 import { http } from '@/api/http';
-import { MiniInsightsPanel } from '@/components/dashboard/MiniInsightsPanel';
-import { SuggestedActions } from '@/components/dashboard/SuggestedActions';
 import { TrackManStatusCard } from '@/components/dashboard/TrackManStatusCard';
 import { CommandShortcutBar } from '@/components/dashboard/CommandShortcutBar';
-import { RecentCustomers } from '@/components/dashboard/RecentCustomers';
 import MessagesCardV3 from '@/components/dashboard/MessagesCardV3';
-import OccupancyMap from '@/components/dashboard/OccupancyMap';
 import { TaskList } from '@/components/dashboard/TaskList';
 import { tokenManager } from '@/utils/tokenManager';
 import logger from '@/services/logger';
@@ -310,13 +306,6 @@ export default function Home() {
                 <TaskList />
               </SectionErrorBoundary>
 
-              {/* Mobile-only recent customers */}
-              <SectionErrorBoundary section="Recent Customers">
-                <RecentCustomers />
-              </SectionErrorBoundary>
-              
-              {/* Desktop-only enhancements */}
-              <MiniInsightsPanel />
             </div>
             
             {/* Sidebar - Contains Quick Stats and External Tools - 4 columns */}
@@ -324,17 +313,8 @@ export default function Home() {
               <SectionErrorBoundary section="Quick Stats">
                 <DatabaseExternalTools quickStats={quickStats} />
               </SectionErrorBoundary>
-              {/* Bay Status - Desktop only */}
-              <div className="hidden lg:block">
-                <SectionErrorBoundary section="Occupancy Map" compact>
-                  <OccupancyMap compact />
-                </SectionErrorBoundary>
-              </div>
               <SectionErrorBoundary section="TrackMan Status" compact>
                 <TrackManStatusCard />
-              </SectionErrorBoundary>
-              <SectionErrorBoundary section="Suggested Actions">
-                <SuggestedActions />
               </SectionErrorBoundary>
             </div>
           </div>

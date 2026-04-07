@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.34.0] - 2026-04-07
+
+### Removed — Demo/Mock Dashboard Cards
+- **Removed MiniInsightsPanel** — Displayed 2 hardcoded values (No-Show Rate always 8.5%, Refunds always 3) alongside 2 real metrics, making the whole panel misleading. Also polled 2 API endpoints every 60 seconds to display fake data.
+- **Removed OccupancyMap (Bay Status)** — Showed randomly-generated bay occupancy data via `Math.random()` every 30 seconds. The `/system/check` endpoint never returned bay data, so the entire card fell back to mock data. Also made a wasted API call on every refresh.
+- **Removed SuggestedActions** — Mixed real history analysis with hardcoded "Bay 4 idle" / "Bay 7 idle" alerts that appeared randomly (`Math.random() > 0.7`). Confirming an idle bay alert did nothing (just called `logger.debug`).
+- **Removed RecentCustomers** — Was fully disabled (API code commented out, always returned empty array) to prevent rate-limit exhaustion from duplicate calls with MessagesCard.
+- **Deleted `systemStatus.ts` API file** — Only consumer was OccupancyMap. RemoteActionsBar imported it but never used it (already had "locationStatuses removed" comment). Cleaned up the dead import.
+
 ## [1.33.9] - 2026-04-07
 
 ### Fixed — Receipt Upload and LLM Requests Failing with PayloadTooLargeError
