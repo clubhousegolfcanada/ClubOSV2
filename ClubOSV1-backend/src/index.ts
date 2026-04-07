@@ -206,7 +206,14 @@ app.use('/api/openphone-v3/webhook-v3', express.raw({ type: 'application/json' }
   next();
 });
 
-app.use(express.json({ limit: '1mb' })); // Default 1MB; routes that need more override below
+// Routes that need larger payloads — MUST be parsed BEFORE the global default
+// (body-parser skips if req.body is already set, so these take priority)
+app.use('/api/receipts', express.json({ limit: '25mb' }));
+app.use('/api/white-label-scanner', express.json({ limit: '25mb' }));
+app.use('/api/llm', express.json({ limit: '5mb' }));
+app.use('/api/logs', express.json({ limit: '5mb' }));
+
+app.use(express.json({ limit: '1mb' })); // Default 1MB for everything else
 app.use(cookieParser());
 app.use(sanitizeMiddleware);
 app.use(requestLogger);
@@ -236,7 +243,7 @@ app.use('/api/bookings', bookingsRoutes);
 app.use('/api/booking/locations', require('./routes/booking/locations').default);
 app.use('/api/hubspot', require('./routes/hubspot').default);
 app.use('/api/tickets', ticketsRoutes);
-app.use('/api/receipts', express.json({ limit: '25mb' }), require('./routes/receipts-simple').default);
+app.use('/api/receipts', require('./routes/receipts-simple').default);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/llm', llmRateLimiter, trackUsage, llmRoutes);
@@ -319,7 +326,7 @@ app.use('/api/integrations', integrationsRoutes);
 app.use('/api/patterns', enhancedPatternsRouter);
 app.use('/api/unifi-doors', unifiDoorsRoutes);
 app.use('/api/white-label-planner', whiteLabelPlannerRoutes);
-app.use('/api/white-label-scanner', express.json({ limit: '25mb' }), whiteLabelScannerRoutes);
+app.use('/api/white-label-scanner', whiteLabelScannerRoutes);
 app.use('/api/system-status', require('./routes/system-status').default);
 app.use('/api/system-settings', require('./routes/systemSettings').default);
 app.use('/api/settings', bookingConfigRoutes);

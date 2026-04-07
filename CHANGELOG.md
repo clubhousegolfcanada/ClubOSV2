@@ -2,6 +2,11 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.33.9] - 2026-04-07
+
+### Fixed — Receipt Upload and LLM Requests Failing with PayloadTooLargeError
+- **Moved route-specific JSON body parsers before the global 1MB default** — The global `express.json({ limit: '1mb' })` middleware ran before all route handlers, rejecting any request body over 1MB with `PayloadTooLargeError` before route-specific parsers (receipts at 25MB, white-label-scanner at 25MB) could execute. Express body-parser skips if `req.body` is already set, so registering the larger-limit parsers first ensures they take priority for their routes. Also added 5MB limits for `/api/llm` and `/api/logs` which were actively failing in production logs.
+
 ## [1.33.8] - 2026-04-07
 
 ### Fixed — Ticket Page Slow First Load (up to 10 seconds)
