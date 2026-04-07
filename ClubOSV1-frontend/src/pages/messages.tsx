@@ -332,13 +332,32 @@ export default function Messages() {
       }
     })();
 
-    // Connect to Server-Sent Events for real-time message updates
+    // Connect to Server-Sent Events for real-time message updates.
+    // Auto-reconnects with exponential backoff on disconnect (common on mobile
+    // PWA when device sleeps, switches networks, or tabs go to background).
+    let sseReconnectTimer: NodeJS.Timeout | null = null;
+    let sseReconnectDelay = 2000; // Start at 2s, doubles up to 30s max
+    const SSE_MAX_RECONNECT_DELAY = 30000;
+
     const connectSSE = () => {
+      if (!isMounted) return;
       const token = tokenManager.getToken();
       if (!token) return;
 
+      // Close existing connection before reconnecting
+      if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+      }
+
       const apiUrl = getBaseUrl();
       eventSource = new EventSource(`${apiUrl}/api/messages/events?token=${token}`);
+
+      eventSource.addEventListener('connected', () => {
+        // Connection established — reset backoff
+        sseReconnectDelay = 2000;
+        logger.debug('SSE connected');
+      });
 
       eventSource.addEventListener('new_message', () => {
         if (isTabVisible && isMounted && loadConversationsRef.current) {
@@ -353,12 +372,34 @@ export default function Messages() {
       });
 
       eventSource.onerror = () => {
-        // SSE disconnected — fallback polling will cover it
-        logger.debug('SSE connection error, relying on fallback polling');
+        // SSE disconnected — close and schedule reconnect with backoff
+        logger.debug(`SSE connection error, reconnecting in ${sseReconnectDelay / 1000}s`);
+        if (eventSource) {
+          eventSource.close();
+          eventSource = null;
+        }
+
+        if (isMounted) {
+          sseReconnectTimer = setTimeout(() => {
+            sseReconnectDelay = Math.min(sseReconnectDelay * 2, SSE_MAX_RECONNECT_DELAY);
+            connectSSE();
+          }, sseReconnectDelay);
+        }
       };
     };
 
     connectSSE();
+
+    // Also reconnect SSE when tab becomes visible again (mobile wake-up)
+    const reconnectOnVisibility = () => {
+      if (!document.hidden && isMounted) {
+        // Immediate reconnect on tab focus — don't wait for backoff
+        sseReconnectDelay = 2000;
+        if (sseReconnectTimer) clearTimeout(sseReconnectTimer);
+        connectSSE();
+      }
+    };
+    document.addEventListener('visibilitychange', reconnectOnVisibility);
 
     // Fallback polling every 30s (SSE handles real-time, this is safety net)
     const FALLBACK_POLL_INTERVAL = 30000;
@@ -399,6 +440,10 @@ export default function Messages() {
       if (eventSource) {
         eventSource.close();
       }
+      if (sseReconnectTimer) {
+        clearTimeout(sseReconnectTimer);
+      }
+      document.removeEventListener('visibilitychange', reconnectOnVisibility);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       abortControllerRef.current?.abort();
       historyAbortRef.current?.abort();

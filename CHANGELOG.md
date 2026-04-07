@@ -2,6 +2,13 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.33.4] - 2026-04-07
+
+### Fixed — Message Notification Delays in ClubOS
+- **SSE events now fire immediately after DB write instead of after ClubAI processing** — Previously, the Server-Sent Events that trigger real-time UI updates on the messages page fired at the very end of the webhook handler, AFTER the 3-second debounce + ClubAI GPT call (4-8+ seconds of built-in delay). Moved SSE emit and cache invalidation to right after the message is written to the database, before any AI processing. Both existing-conversation and new-conversation paths fixed.
+- **Backend conversations cache now cleared on inbound webhooks** — The 30-second in-memory cache on the conversations endpoint was only cleared when operators sent messages, never when new customer messages arrived via webhook. Frontend polls and SSE-triggered fetches would hit the stale cache and miss new messages for up to 30 seconds. Now cleared immediately when webhooks write new data.
+- **SSE auto-reconnects on disconnect with exponential backoff** — When the SSE connection dropped (common on mobile PWA: device sleep, network switch, background tab), it was never re-established. The frontend logged the error and relied on 30-second fallback polling for the rest of the session. Now reconnects automatically starting at 2 seconds, doubling up to 30 seconds max. Resets backoff on successful connection. Also immediately reconnects when the tab becomes visible again (phone wake-up).
+
 ## [1.33.3] - 2026-04-06
 
 ### Fixed — ClubAI Hallucination on Unknown Topics

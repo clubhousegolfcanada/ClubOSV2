@@ -15,7 +15,7 @@ import { patternSafetyService } from '../services/patternSafetyService';
 import { detectMessageTopic, getTopicLabel } from '../utils/topicDetection';
 import { clubaiService } from '../services/clubaiService';
 import { cacheService } from '../services/cacheService';
-import { messageEvents } from './messages';
+import { messageEvents, conversationCache } from './messages';
 
 const router = Router();
 
@@ -838,6 +838,26 @@ router.post('/webhook', async (req: Request, res: Response) => {
             minutesSinceLastMessage: Math.round(existingConv.rows[0].minutes_since_last_message)
           });
 
+          // EARLY SSE + CACHE CLEAR: Fire immediately after DB write so the frontend
+          // sees the new message right away — before the 3s ClubAI debounce + GPT call.
+          // Previously this was at the very end of the webhook handler, adding 4-8s delay.
+          try {
+            conversationCache.clear();
+            messageEvents.emit('new_message', {
+              phone_number: phoneNumber,
+              customer_name: customerName,
+              direction: messageDirection,
+              body: (messageData.body || messageData.text || '').substring(0, 200),
+              timestamp: new Date().toISOString()
+            });
+            messageEvents.emit('conversation_update', {
+              phone_number: phoneNumber,
+              updated_at: new Date().toISOString()
+            });
+          } catch (earlySSEError) {
+            logger.debug('Early SSE emit error (non-critical):', earlySSEError);
+          }
+
           // Push notification already sent early (before processing) — skip duplicate
           // Process inbound message safeguards
           if (messageDirection === 'inbound') {
@@ -1404,13 +1424,32 @@ router.post('/webhook', async (req: Request, res: Response) => {
           ? 'first message from customer' 
           : `${Math.round(existingConv.rows[0].minutes_since_last_message)} minutes since last message (> 1 hour)`;
         
-        logger.info('OpenPhone new conversation created', { 
-          conversationId: newConversationId, 
+        logger.info('OpenPhone new conversation created', {
+          conversationId: newConversationId,
           phoneNumber,
           reason,
           assistantType
         });
-        
+
+        // EARLY SSE + CACHE CLEAR (new conversation path): Same as existing conversation
+        // path — fire immediately so the frontend sees the new conversation before ClubAI runs.
+        try {
+          conversationCache.clear();
+          messageEvents.emit('new_message', {
+            phone_number: phoneNumber,
+            customer_name: customerName,
+            direction: messageDirection,
+            body: (messageData.body || messageData.text || '').substring(0, 200),
+            timestamp: new Date().toISOString()
+          });
+          messageEvents.emit('conversation_update', {
+            phone_number: phoneNumber,
+            updated_at: new Date().toISOString()
+          });
+        } catch (earlySSEError) {
+          logger.debug('Early SSE emit error (non-critical):', earlySSEError);
+        }
+
         // Push notification already sent early (before processing) — skip duplicate for new conversations
         if (messageDirection === 'inbound') {
           // ClubAI: Process the first message from a new conversation
@@ -1570,22 +1609,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
           }
         }
 
-        // Emit SSE event for real-time frontend updates
-        try {
-          messageEvents.emit('new_message', {
-            phone_number: phoneNumber,
-            customer_name: customerName,
-            direction: messageDirection,
-            body: (messageData.body || messageData.text || '').substring(0, 200),
-            timestamp: new Date().toISOString()
-          });
-          messageEvents.emit('conversation_update', {
-            phone_number: phoneNumber,
-            updated_at: new Date().toISOString()
-          });
-        } catch (sseError) {
-          logger.debug('SSE emit error (non-critical):', sseError);
-        }
+        // SSE events + cache clear already fired early (right after DB write, before ClubAI).
+        // No need to emit again here.
 
         break;
 

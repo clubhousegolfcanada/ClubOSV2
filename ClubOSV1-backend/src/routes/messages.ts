@@ -25,7 +25,8 @@ messageEvents.setMaxListeners(50); // Support up to 50 concurrent operator conne
 export { messageEvents };
 
 // Simple in-memory cache for conversations
-const conversationCache = new Map<string, { data: any; timestamp: number }>();
+// Exported so the openphone webhook can invalidate it when new messages arrive
+export const conversationCache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 30000; // 30 seconds TTL for cache - aligned with frontend polling interval
 
 // Request deduplication to prevent concurrent identical requests
