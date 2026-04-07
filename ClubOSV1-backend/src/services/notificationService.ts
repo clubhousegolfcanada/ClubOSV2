@@ -66,42 +66,46 @@ class NotificationService {
     }
 
     try {
-      // Check user's notification preferences
-      const prefsResult = await db.query(
-        `SELECT * FROM notification_preferences WHERE user_id = $1`,
-        [userId]
-      );
+      // Check user's notification preferences.
+      // Non-fatal: if this query fails (table missing, transient DB error), send anyway.
+      // Better to send an unwanted notification than silently drop an important one.
+      try {
+        const prefsResult = await db.query(
+          `SELECT * FROM notification_preferences WHERE user_id = $1`,
+          [userId]
+        );
 
-      const prefs = prefsResult.rows[0];
-      
-      // Check if notifications are enabled for this type
-      if (prefs) {
-        const type = notification.data?.type || 'messages';
-        if (type === 'messages' && !prefs.messages_enabled) return;
-        if (type === 'tickets' && !prefs.tickets_enabled) return;
-        if (type === 'system' && !prefs.system_enabled) return;
+        const prefs = prefsResult.rows[0];
 
-        // Check quiet hours
-        if (prefs.quiet_hours_enabled) {
-          const now = new Date();
-          const currentTime = now.getHours() * 60 + now.getMinutes();
-          const startTime = this.timeToMinutes(prefs.quiet_hours_start);
-          const endTime = this.timeToMinutes(prefs.quiet_hours_end);
+        if (prefs) {
+          const type = notification.data?.type || 'messages';
+          if (type === 'messages' && prefs.messages_enabled === false) return;
+          if (type === 'tickets' && prefs.tickets_enabled === false) return;
+          if (type === 'system' && prefs.system_enabled === false) return;
 
-          if (startTime < endTime) {
-            // Normal case: quiet hours don't cross midnight
-            if (currentTime >= startTime && currentTime < endTime) {
-              logger.info(`Skipping notification for user ${userId} - quiet hours`);
-              return;
-            }
-          } else {
-            // Quiet hours cross midnight
-            if (currentTime >= startTime || currentTime < endTime) {
-              logger.info(`Skipping notification for user ${userId} - quiet hours`);
-              return;
+          // Check quiet hours
+          if (prefs.quiet_hours_enabled && prefs.quiet_hours_start && prefs.quiet_hours_end) {
+            const now = new Date();
+            const currentTime = now.getHours() * 60 + now.getMinutes();
+            const startTime = this.timeToMinutes(prefs.quiet_hours_start);
+            const endTime = this.timeToMinutes(prefs.quiet_hours_end);
+
+            if (startTime < endTime) {
+              if (currentTime >= startTime && currentTime < endTime) {
+                logger.info(`Skipping notification for user ${userId} - quiet hours`);
+                return;
+              }
+            } else {
+              if (currentTime >= startTime || currentTime < endTime) {
+                logger.info(`Skipping notification for user ${userId} - quiet hours`);
+                return;
+              }
             }
           }
         }
+      } catch (prefsErr) {
+        // Preferences check failed — send notification anyway
+        logger.warn(`Notification preferences check failed for user ${userId}, sending anyway:`, prefsErr);
       }
 
       // Get active subscriptions for user
@@ -166,10 +170,12 @@ class NotificationService {
         JSON.stringify(payload)
       );
 
-      // Update last used timestamp
+      // Update last used timestamp and re-activate if previously deactivated by transient errors.
+      // This handles the case where a subscription was disabled by temporary failures
+      // (e.g. Android Doze throttling FCM) but the push service is working again.
       await db.query(
-        `UPDATE push_subscriptions 
-         SET last_used_at = NOW(), failed_attempts = 0 
+        `UPDATE push_subscriptions
+         SET last_used_at = NOW(), failed_attempts = 0, is_active = true
          WHERE id = $1`,
         [subscription.id]
       );
@@ -177,38 +183,66 @@ class NotificationService {
       // Log to history
       await this.logNotification(subscription.user_id, subscription.id, notification, 'sent');
     } catch (error: any) {
-      logger.error('Failed to send push notification:', error);
+      logger.error('Failed to send push notification:', {
+        error: error.message,
+        statusCode: error.statusCode,
+        subscriptionId: subscription.id,
+        userId: subscription.user_id,
+        endpoint: subscription.endpoint.substring(0, 60),
+      });
 
-      // Handle different error types
-      if (error.statusCode === 410) {
-        // Subscription expired - mark as inactive
+      // Handle different error types:
+      // 404/410 = subscription genuinely expired or invalid → deactivate immediately
+      // 401/403 = VAPID auth issue → don't punish the subscription, it's our problem
+      // 429 = rate limited → transient, don't count
+      // 5xx/network = push service down → transient, don't count
+      const status = error.statusCode;
+
+      if (status === 410 || status === 404) {
+        // Subscription expired or endpoint gone — permanently deactivate
         await db.query(
           `UPDATE push_subscriptions SET is_active = false WHERE id = $1`,
           [subscription.id]
         );
+        logger.info('Push subscription expired, deactivated', {
+          subscriptionId: subscription.id,
+          statusCode: status,
+        });
+      } else if (status === 401 || status === 403) {
+        // VAPID auth issue — log loudly but don't touch the subscription
+        logger.error('Push VAPID auth failure — check VAPID keys', {
+          statusCode: status,
+          subscriptionId: subscription.id,
+        });
       } else {
-        // Increment failed attempts
+        // Transient failure (429 rate limit, 5xx server error, network timeout).
+        // Increment counter but use a generous threshold. Android aggressively
+        // throttles background network (Doze mode, App Standby) which causes
+        // temporary FCM failures. 5 was way too aggressive — subscriptions were
+        // getting permanently killed by normal Android power management.
         await db.query(
-          `UPDATE push_subscriptions 
-           SET failed_attempts = failed_attempts + 1 
+          `UPDATE push_subscriptions
+           SET failed_attempts = failed_attempts + 1
            WHERE id = $1`,
           [subscription.id]
         );
 
-        // Disable after 5 failed attempts
+        // Only deactivate after 25 consecutive failures (was 5).
+        // Successful sends reset the counter to 0, so this only triggers
+        // for subscriptions that are truly dead.
         await db.query(
-          `UPDATE push_subscriptions 
-           SET is_active = false 
-           WHERE id = $1 AND failed_attempts >= 5`,
+          `UPDATE push_subscriptions
+           SET is_active = false
+           WHERE id = $1 AND failed_attempts >= 25`,
           [subscription.id]
         );
       }
 
       // Log failure
       await this.logNotification(
-        subscription.user_id, 
-        subscription.id, 
-        notification, 
+        subscription.user_id,
+        subscription.id,
+        notification,
         'failed',
         error.message
       );

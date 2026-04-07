@@ -2,6 +2,15 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.33.5] - 2026-04-07
+
+### Fixed — Android Push Notification Reliability
+- **Service worker now always calls `event.waitUntil()` on push events** — On Android Chrome, if the push handler returned without calling `waitUntil()` (which happened when `event.data` was null or JSON parse failed), Chrome would terminate the service worker before `showNotification` completed, silently dropping the notification. This was the primary cause of "random" missing notifications on Android. Now wraps the entire handler in `waitUntil()` with an async function, and shows a fallback notification ("New update available") if the payload can't be parsed.
+- **Subscription deactivation threshold raised from 5 to 25 failures** — Android Doze mode and App Standby aggressively throttle background network, causing temporary FCM push failures. 5 failures was too aggressive -- normal Android power management would permanently kill subscriptions within a day of the phone being idle. Raised to 25, and transient errors (429 rate limit, 5xx server errors, network timeouts) are the only ones counted. VAPID auth errors (401/403) no longer punish the subscription. Expired subscriptions (410/404) still deactivate immediately.
+- **Successful push sends now re-activate previously disabled subscriptions** — If a subscription was disabled by transient failures but the push service starts working again, the next successful send flips `is_active` back to `true` and resets the failure counter. Users no longer need to manually re-subscribe after temporary outages.
+- **Notification preferences check is now non-fatal** — If the `notification_preferences` DB query fails (transient connection issue, table not found), the notification sends anyway instead of being silently dropped. Better to send an unwanted notification than miss an important one.
+- **Frontend unsubscribe now sends endpoint in request body** — The DELETE request to `/notifications/subscribe` was missing the `endpoint` parameter, causing backend validation to reject it. Users who "disabled" notifications were still subscribed in the database. Fixed to pass the subscription endpoint.
+
 ## [1.33.4] - 2026-04-07
 
 ### Fixed — Message Notification Delays in ClubOS

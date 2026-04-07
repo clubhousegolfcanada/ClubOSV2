@@ -241,12 +241,18 @@ export const usePushNotifications = () => {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
 
+      const endpoint = subscription?.endpoint;
+
       if (subscription) {
         await subscription.unsubscribe();
       }
 
-      // Notify backend
-      const response = await http.delete('notifications/subscribe');
+      // Notify backend — must include the endpoint so the server knows which
+      // subscription to deactivate. Previously sent no body, causing the
+      // backend validation to reject the request and leave the subscription active.
+      const response = await http.delete('notifications/subscribe', {
+        data: { endpoint: endpoint || '' }
+      });
 
       if (!response.data.success) {
         throw new Error('Failed to unsubscribe');

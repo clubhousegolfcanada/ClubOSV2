@@ -57,42 +57,65 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
-// Push event - handle incoming push notifications
+// Push event - handle incoming push notifications.
+// CRITICAL: event.waitUntil() MUST always be called. On Android, if the push handler
+// returns without calling waitUntil(), Chrome may terminate the service worker before
+// showNotification completes, causing the notification to silently disappear.
+// This was a major cause of "random" missing notifications on Android.
 self.addEventListener('push', (event) => {
   console.log('[SW] Push notification received:', event);
 
-  if (!event.data) {
-    console.log('[SW] Push notification has no data');
-    return;
-  }
-
-  let notification;
-  try {
-    notification = event.data.json();
-  } catch (e) {
-    console.error('[SW] Failed to parse notification data:', e);
-    return;
-  }
-
-  const options = {
-    body: notification.body || 'New notification from ClubOS',
-    icon: notification.icon || '/clubos-icon-192.png',
-    badge: notification.badge || '/clubos-badge-72.png',
-    vibrate: notification.vibrate || [200, 100, 200, 100, 200], // Enhanced default vibration
-    data: notification.data || {},
-    requireInteraction: notification.requireInteraction !== undefined ? notification.requireInteraction : true,
-    actions: notification.actions || [],
-    tag: notification.tag || 'clubos-notification',
-    renotify: true,
-    silent: notification.silent || false,
-    sound: notification.sound || 'default'
-  };
-
+  // Always wrap in waitUntil — even error paths must show a fallback notification.
+  // Android Chrome kills the SW if waitUntil isn't called, dropping the notification.
   event.waitUntil(
-    self.registration.showNotification(
-      notification.title || 'ClubOS',
-      options
-    )
+    (async () => {
+      let notification = null;
+
+      // Try to parse the push payload
+      if (event.data) {
+        try {
+          notification = event.data.json();
+        } catch (e) {
+          console.error('[SW] Failed to parse notification data:', e);
+          // Try as plain text fallback
+          try {
+            const text = event.data.text();
+            notification = { title: 'ClubOS', body: text || 'New notification' };
+          } catch {
+            // Complete parse failure — fallback below
+          }
+        }
+      }
+
+      // Fallback: if no data or parse failed entirely, still show something.
+      // A visible notification is always better than a silent drop.
+      if (!notification) {
+        notification = {
+          title: 'ClubOS',
+          body: 'New update available — tap to check',
+          data: { type: 'messages', url: '/messages' }
+        };
+      }
+
+      const options = {
+        body: notification.body || 'New notification from ClubOS',
+        icon: notification.icon || '/clubos-icon-192.png',
+        badge: notification.badge || '/clubos-badge-72.png',
+        vibrate: notification.vibrate || [200, 100, 200, 100, 200],
+        data: notification.data || {},
+        requireInteraction: notification.requireInteraction !== undefined ? notification.requireInteraction : true,
+        actions: notification.actions || [],
+        tag: notification.tag || 'clubos-notification',
+        renotify: true,
+        silent: notification.silent || false,
+        sound: notification.sound || 'default'
+      };
+
+      return self.registration.showNotification(
+        notification.title || 'ClubOS',
+        options
+      );
+    })()
   );
 });
 
