@@ -167,7 +167,11 @@ class NotificationService {
 
       await webpush.sendNotification(
         pushSubscription,
-        JSON.stringify(payload)
+        JSON.stringify(payload),
+        {
+          urgency: 'high',
+          TTL: 86400, // 24 hours (default was 4 weeks, which is excessive for SMS notifications)
+        }
       );
 
       // Update last used timestamp and re-activate if previously deactivated by transient errors.

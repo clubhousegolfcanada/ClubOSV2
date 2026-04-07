@@ -2,6 +2,11 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.33.7] - 2026-04-07
+
+### Fixed — Android Push Notifications Delayed Up to 30 Minutes
+- **Push notifications now set `urgency: high`** — The `web-push` library defaults to `normal` urgency, which maps to FCM normal-priority on Android. Android Doze mode batches normal-priority messages and delivers them during maintenance windows up to 30 minutes apart. Setting `urgency: high` maps to FCM high-priority, which bypasses Doze and delivers immediately. Also reduced TTL from 4 weeks (library default) to 24 hours since stale message notifications aren't useful.
+
 ## [1.33.6] - 2026-04-07
 
 ### Fixed — PWA Service Worker Auto-Update for Home Screen Installs
