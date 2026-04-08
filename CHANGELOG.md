@@ -15,6 +15,7 @@ All notable changes to ClubOS will be documented in this file.
 - **Renamed "Bay" to "Box" on commands page** — All user-facing labels, descriptions, examples, tooltips, and confirmation dialogs now say "Box" instead of "Bay" to match actual facility terminology.
 - **Fixed TrackMan auto-restart schedule not applying until server restart** — Saving new settings from the UI wrote to the database but never called `trackmanRestartJob.reload()`, so the cron schedule only took effect after a deploy. Now reloads the job immediately after saving.
 - **Replaced raw cron input with time picker on TrackMan page** — The "Cron:" text field exposing raw cron syntax (`0 3 * * *`) has been replaced with a simple hour dropdown ("Restart at: 3:00 AM Daily"). Also renamed "Bay" labels to "Box" on the TrackMan panel.
+- **Fixed TrackMan "Manage" button navigating to Users tab instead of TrackMan** — The link correctly pointed to `/operations?tab=trackman`, but the operations page role-based `useEffect` always overrode the URL parameter by forcing admins to the "users" tab on load. Now respects the `?tab=` parameter when present.
 
 ## [1.33.9] - 2026-04-07
 

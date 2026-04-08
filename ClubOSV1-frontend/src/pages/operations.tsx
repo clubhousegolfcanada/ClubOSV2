@@ -49,11 +49,13 @@ export default function Operations() {
         // Redirect other non-authorized users to login
         window.location.href = '/login';
       }
-      // Set initial tab based on role
-      if (user.role === 'admin') {
-        setActiveTab('users');
-      } else if (user.role === 'operator') {
-        setActiveTab('patterns');
+      // Set initial tab based on role — but only if no ?tab= param was provided
+      if (!router.query.tab) {
+        if (user.role === 'admin') {
+          setActiveTab('users');
+        } else if (user.role === 'operator') {
+          setActiveTab('patterns');
+        }
       }
     }
   }, [user]);
