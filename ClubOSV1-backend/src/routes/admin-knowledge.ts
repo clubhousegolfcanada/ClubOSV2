@@ -71,7 +71,7 @@ const staticKnowledge = [
     solutions: [
       'Press and hold power button on TrackMan unit for 10 seconds',
       'Wait 30 seconds, then power back on',
-      'If still frozen, restart the computer from NinjaOne',
+      'If still frozen, trigger a PC reboot via the TrackMan agent (Remote Actions)',
       'Check all cable connections',
       'Verify TrackMan software is running (should auto-start)'
     ],
@@ -105,7 +105,7 @@ const staticKnowledge = [
     solutions: [
       'Check projector power and connections',
       'Verify HDMI cable is connected properly',
-      'Use NinjaOne to restart display software',
+      'Use the TrackMan agent (Remote Actions) to restart bay software',
       'Check projector filter (may need cleaning)',
       'Adjust projector settings if image is distorted'
     ],

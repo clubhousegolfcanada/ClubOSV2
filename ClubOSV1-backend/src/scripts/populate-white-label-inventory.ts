@@ -185,7 +185,6 @@ async function populateIntegrations() {
     { name: 'Slack', type: 'Communication', is_required: false, notes: 'Team communication (replaceable)' },
     { name: 'Sentry', type: 'Analytics', is_required: false, notes: 'Error tracking (optional)' },
     { name: 'TripleseatDirect', type: 'Analytics', is_required: false, notes: 'Event management (optional)' },
-    { name: 'NinjaOne', type: 'Analytics', is_required: false, notes: 'Remote monitoring (optional)' },
     { name: 'SendGrid', type: 'Communication', is_required: false, notes: 'Email service (replaceable)' },
     { name: 'Twilio', type: 'Communication', is_required: false, notes: 'SMS backup service (optional)' },
     

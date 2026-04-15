@@ -39,7 +39,7 @@ export type ActionType =
 
 export type ActionSource =
   | 'unifi'
-  | 'ninjaone'
+  | 'trackman-agent'
   | 'splashtop'
   | 'tickets'
   | 'booking'

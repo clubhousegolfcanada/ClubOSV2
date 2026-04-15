@@ -2,6 +2,33 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.35.0] - 2026-04-15
+
+### Removed — NinjaOne Integration (replaced by TrackMan agent)
+- **Deleted backend NinjaOne code**: `services/ninjaone.ts`, `routes/ninjaone-remote.ts`, `routes/ninjaone-sync.ts`, `config/ninjaDevices.ts`, and all `scripts/deployment/*ninjaone*` shell scripts.
+- **Deleted frontend NinjaOne client**: `api/ninjaoneRemote.ts` removed; `remoteDesktopConfig.ts` narrowed to Splashtop-only (`RemoteDesktopProvider = 'splashtop'`).
+- **Removed NinjaOne management UI**: `OperationsIntegrations.tsx` no longer shows the NinjaOne card, test-connection, or the script/device sync panel. `OperationsPatterns.tsx` Trackman Reset description now references the TrackMan agent.
+- **Removed `/api/ninjaone-remote` and `/api/ninjaone` route mounts** from `backend/src/index.ts`.
+- **Removed NinjaOne health check** from `routes/system-status.ts` (no longer checks `NINJAONE_CLIENT_ID`/`NINJAONE_CLIENT_SECRET`).
+- **Removed dead `ninjaone_scripts` / `ninjaone_devices` CREATE TABLEs** from `ensure-critical-tables.ts` (along with their indexes, constraint, and default script seed).
+
+### Rewired — Remote actions now dispatch through TrackMan agent
+- **`trackmanRestartService`** extended with a `TrackmanCommandType` union (`restart | reboot | restart-browser | restart-all | restart-music | restart-tv | projector-power | projector-input | projector-autosize | other`) and a new `triggerLocationCommand()` helper for non-bay-scoped commands (music/TV/projector). Only `restart | reboot | restart-all` trigger the 10-minute per-device cooldown.
+- **`routes/remoteActions.ts` rewritten**: the legacy NinjaOne script/device map and demo mode are gone. Action strings now map to `TrackmanCommandType` values and are queued via `triggerRestart()` (bay-level) or `triggerLocationCommand()` (location-level). Response contract (`jobId`, `GET /status/:jobId`, `GET /devices/:location`, `GET /recent`) is preserved; `jobId` is now the command UUID from `trackman_restart_commands`.
+- **`aiAutomationService`** `executeTrackmanReset` / `executeSimulatorReboot` / `executeTVRestart` now call `triggerRestart`/`triggerLocationCommand`. Added a clearly-marked `resolveLocationFromConversation()` stub returning `null` (honest no-op until SMS → location mapping is wired).
+- **`actionEventService`**: `ActionSource` union drops `'ninjaone'` in favour of `'trackman-agent'`.
+- **Knowledge base strings** in `admin-knowledge.ts` updated from "restart via NinjaOne" to "trigger a reboot via the TrackMan agent (Remote Actions)".
+- **`whiteLabelScanner.ts` / `populate-white-label-inventory.ts`**: NinjaOne entry removed from the integration inventory.
+- **`commands.tsx`**: `action: 'ninjaone'` rewired to `action: 'trackman-agent'` on the "Reset All TrackMan Systems" and "Reboot Simulator PC" command tiles.
+- **`RemoteActionsBar.tsx`**: Dropped dynamic script/device loading from the (now-removed) NinjaOne API; locations now mirror the canonical backend `TRACKMAN_LOCATIONS` array.
+
+### Docs
+- **CLAUDE.md / README.md / ARCHITECTURE.md** updated: TrackMan agent replaces NinjaOne in the integration map and architecture diagram. `NinjaOne is DEPRECATED` note added to the DEAD CODE section.
+
+### Migration notes
+- `404 action_events` CHECK constraint still allows `'ninjaone'` as a historical value. No code path emits it anymore, so no data migration is required. A follow-up migration can tighten the CHECK if desired.
+- `remote_actions_log.ninja_job_id` column is preserved as historical data. New writes record TrackMan command UUIDs; existing NinjaOne job IDs remain readable.
+
 ## [1.34.0] - 2026-04-07
 
 ### Removed — Demo/Mock Dashboard Cards

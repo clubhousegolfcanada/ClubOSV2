@@ -21,13 +21,11 @@ const AUTH_STORAGE_KEYS = [
  * Centralized here to prevent drift between components
  */
 export const NON_CRITICAL_AUTH_ENDPOINTS = [
-  '/ninjaone/',
   '/system/check',
   '/door-access/',
   '/remote-actions/',
   '/performance',
   '/devices',
-  '/scripts',
   '/status/'
 ] as const;
 

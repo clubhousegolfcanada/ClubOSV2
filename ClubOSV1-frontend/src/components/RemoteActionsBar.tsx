@@ -7,7 +7,6 @@ import { useNotifications } from '@/state/hooks';
 import { useAuthState } from '@/state/useStore';
 import { hasMinimumRole } from '@/utils/roleUtils';
 import { openRemoteDesktopForBay } from '@/utils/remoteDesktopConfig';
-import { http } from '@/api/http';
 import logger from '@/services/logger';
 
 interface LocationConfig {
@@ -23,8 +22,6 @@ const RemoteActionsBar: React.FC = () => {
   const [doorStatuses, setDoorStatuses] = useState<Record<string, DoorStatus[]>>({});
   const [loadingDoors, setLoadingDoors] = useState<Set<string>>(new Set());
   // locationStatuses removed - was showing demo/mock data
-  const [availableScripts, setAvailableScripts] = useState<any[]>([]);
-  const [availableDevices, setAvailableDevices] = useState<any[]>([]);
   const { notify } = useNotifications();
   const { user } = useAuthState();
   
@@ -36,16 +33,14 @@ const RemoteActionsBar: React.FC = () => {
     }
   }, []);
 
-  // Load door statuses, system status, and NinjaOne data when expanded
+  // Load door statuses and system status when expanded
   useEffect(() => {
     if (isExpanded) {
-      // Load initial data
       loadSystemStatuses();
-      loadNinjaOneData();
       locations.forEach(location => {
         loadDoorStatus(location.name);
       });
-      
+
       // Refresh every 30 seconds
       const interval = setInterval(() => {
         loadSystemStatuses();
@@ -56,47 +51,6 @@ const RemoteActionsBar: React.FC = () => {
       return () => clearInterval(interval);
     }
   }, [isExpanded]);
-  
-  // Load NinjaOne scripts and devices from database
-  const loadNinjaOneData = async () => {
-    try {
-      // Fetch scripts with error resilience
-      try {
-        const scriptsResponse = await http.get('ninjaone/scripts');
-        if (scriptsResponse.data.success) {
-          setAvailableScripts(scriptsResponse.data.scripts);
-        }
-      } catch (scriptsError: any) {
-        // Don't let script loading failure break the component
-        if (scriptsError.response?.status !== 401) {
-          logger.debug('Scripts endpoint not available, using defaults');
-        }
-      }
-
-      // Fetch devices with error resilience
-      try {
-        const devicesResponse = await http.get('ninjaone/devices');
-        if (devicesResponse.data.success) {
-          setAvailableDevices(devicesResponse.data.devices);
-        }
-      } catch (devicesError: any) {
-        // Don't let device loading failure break the component
-        if (devicesError.response?.status !== 401) {
-          logger.debug('Devices endpoint not available, using defaults');
-        }
-      }
-    } catch (error: any) {
-      // Only log non-401 errors to avoid confusion
-      if (error.response?.status !== 401) {
-        logger.debug('NinjaOne data not available, using defaults');
-      }
-      // Fallback to default scripts if database is empty
-      setAvailableScripts([
-        { script_id: 'restart-trackman', display_name: 'Restart TrackMan', category: 'trackman', icon: 'refresh-cw', requires_bay: true },
-        { script_id: 'reboot-pc', display_name: 'Reboot PC', category: 'system', icon: 'power', requires_bay: true }
-      ]);
-    }
-  };
   
   // System statuses disabled - was using demo/mock data
   const loadSystemStatuses = async () => {
@@ -110,52 +64,15 @@ const RemoteActionsBar: React.FC = () => {
     localStorage.setItem('remoteActionsExpanded', String(newState));
   };
 
-  // Dynamic location configurations based on devices
-  const locations: LocationConfig[] = React.useMemo(() => {
-    if (availableDevices.length === 0) {
-      // Fallback to default if no devices loaded
-      return [
-        { name: 'Bedford', bays: [1, 2], hasMusic: true, hasTv: true },
-        { name: 'Dartmouth', bays: [1, 2, 3, 4], hasMusic: true, hasTv: true },
-        { name: 'Truro', bays: [1, 2, 3], hasMusic: true, hasTv: true },
-        { name: 'Bayers Lake', bays: [1, 2, 3, 4], hasMusic: true, hasTv: false },
-        { name: 'River Oaks', bays: [1, 2], hasMusic: true, hasTv: false }
-      ];
-    }
-    
-    // Build locations from devices
-    const locationMap = new Map<string, LocationConfig>();
-    
-    availableDevices.forEach(device => {
-      if (!locationMap.has(device.location)) {
-        locationMap.set(device.location, {
-          name: device.location,
-          bays: [],
-          hasMusic: false,
-          hasTv: false
-        });
-      }
-      
-      const config = locationMap.get(device.location)!;
-      
-      if (device.device_type === 'trackman' && device.bay_number) {
-        const bayNum = parseInt(device.bay_number);
-        if (!isNaN(bayNum) && !config.bays.includes(bayNum)) {
-          config.bays.push(bayNum);
-        }
-      } else if (device.device_type === 'music') {
-        config.hasMusic = true;
-      } else if (device.device_type === 'tv') {
-        config.hasTv = true;
-      }
-    });
-    
-    // Sort bays and return locations
-    return Array.from(locationMap.values()).map(loc => ({
-      ...loc,
-      bays: loc.bays.sort((a, b) => a - b)
-    }));
-  }, [availableDevices]);
+  // Canonical locations — mirrors TRACKMAN_LOCATIONS on the backend.
+  // If location config changes, update both here and services/trackmanRestartService.ts.
+  const locations: LocationConfig[] = React.useMemo(() => [
+    { name: 'Bedford', bays: [1, 2], hasMusic: true, hasTv: true },
+    { name: 'Dartmouth', bays: [1, 2, 3, 4], hasMusic: true, hasTv: true },
+    { name: 'Truro', bays: [1, 2, 3], hasMusic: true, hasTv: true },
+    { name: 'Bayers Lake', bays: [1, 2, 3, 4], hasMusic: true, hasTv: false },
+    { name: 'River Oaks', bays: [1, 2], hasMusic: true, hasTv: false },
+  ], []);
 
   // Load door status for a location
   const loadDoorStatus = async (location: string) => {

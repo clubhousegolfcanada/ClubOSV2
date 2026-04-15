@@ -292,7 +292,6 @@ export class WhiteLabelScanner {
         'OpenAI': { type: 'AI', required: true },
         'Slack': { type: 'Communication', required: false },
         'OpenPhone': { type: 'Communication', required: false },
-        'NinjaOne': { type: 'Golf-Specific', required: false },
         'TrackMan': { type: 'Golf-Specific', required: false },
         'HubSpot': { type: 'CRM', required: false },
         'Sentry': { type: 'Monitoring', required: false },

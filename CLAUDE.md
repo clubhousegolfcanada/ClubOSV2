@@ -83,7 +83,7 @@ These files handle database access. Know which does what:
 | **AI/LLM** | `services/llm/`, `services/assistantService.ts`, `routes/ai-automations.ts` | `components/operations/ai/` |
 | **Knowledge** | `services/unifiedKnowledgeService.ts`, `routes/knowledge.ts`, `routes/knowledge-store.ts` | — |
 | **Doors** | `services/unifi*.ts`, `routes/unifi-doors.ts` | — |
-| **Remote** | `services/ninjaone.ts`, `routes/ninjaone-*.ts`, `routes/remoteActions.ts` | `components/RemoteActionsBar.tsx` |
+| **TrackMan Restart** | `services/trackmanRestartService.ts`, `routes/trackman-remote.ts`, `routes/remoteActions.ts`, `jobs/trackmanRestart.ts` | `components/RemoteActionsBar.tsx`, `components/operations/trackman/TrackManPanel.tsx` |
 | **Receipts** | `services/ocr/receiptOCR.ts`, `routes/receipts-simple.ts` | `components/operations/receipts/` |
 | **Dashboard** | — | `components/dashboard/MessagesCardV3.tsx`, `components/dashboard/TaskList.tsx` |
 
@@ -94,6 +94,7 @@ These files handle database access. Know which does what:
 - `utils/database-migrations.ts` — Legacy migration runner, all code skipped. Active migrations use SQL files in `src/database/migrations/`
 - `index.ts` lines ~255-265 — Commented-out v2 route mounts. Leave commented until full migration is ready.
 - `index.ts` lines ~377+ — `require()` style imports (mixed with ES imports at top). Do not "fix" without a plan.
+- **NinjaOne is DEPRECATED and no longer in use.** We replaced it with our own TrackMan agent .exe (see TrackMan Agent integration). Any remaining NinjaOne files (`services/ninjaone.ts`, `routes/ninjaone-*.ts`, `config/ninjaDevices.ts`, `frontend/src/api/ninjaoneRemote.ts`, `scripts/deployment/*ninjaone*`, `docs/archive/ninjaone-scripts/`) are dead. The `DEMO-*` device IDs in `routes/remoteActions.ts` are placeholders that were never populated. Restart/reboot actions already route through `trackmanRestartService.triggerRestart()`. Music/TV/other-action branches in `remoteActions.ts` still reference NinjaOne but are non-functional. Do not reintroduce NinjaOne; rewire remaining actions through the TrackMan agent command queue or remove them.
 
 ## COMMON PITFALLS
 
@@ -112,6 +113,7 @@ These files handle database access. Know which does what:
 **Safety**: `ai_automation_features`, `ai_automation_actions`, `safety_trigger_analytics`, `topic_aware_lockouts`
 **Bookings**: `bookings`, `booking_locations`, `booking_tiers`, `booking_slots`
 **Operations**: `tickets`, `ticket_comments`, `ticket_photos`, `checklists`, `checklist_submissions`, `door_access_logs`, `operator_tasks`
+**TrackMan Agent**: `trackman_devices` (registered bay PCs — hostname, api_key, location, bay_number, last_seen_at heartbeat), `trackman_restart_commands` (command queue — pending → acknowledged → completed/failed/expired, 10-min cooldown per device)
 **Contractors**: `contractor_permissions`, `contractor_checklist_submissions`
 **Customer** (low priority): `club_coins`, `cc_transactions`, `achievements`, `challenges`, `badges`, `leaderboards`, `friends`, `profiles`
 
@@ -134,7 +136,7 @@ These files handle database access. Know which does what:
 | **OpenPhone** | SMS/calls, webhook-driven messaging | `routes/openphone.ts`, `services/openphoneService.ts` |
 | **OpenAI** | 4 GPT-4 assistants + embeddings | `services/assistantService.ts`, `services/llm/` |
 | **UniFi** | Door access control (6 locations) | `services/unifi*.ts`, `routes/unifi-doors.ts` |
-| **NinjaOne** | Remote device management/scripts | `services/ninjaone.ts`, `routes/ninjaone-*.ts` |
+| **TrackMan Agent** | Custom .exe installed on each bay PC. Polls `/api/trackman-remote` every 30s with `X-Device-Key` header to check for queued restart/reboot commands. Registers and heartbeats into `trackman_devices` table. | `services/trackmanRestartService.ts` (`triggerRestart()` is the single entry), `routes/trackman-remote.ts`, `jobs/trackmanRestart.ts` (cron scheduler) |
 | **HubSpot** | CRM contact sync | `services/hubspotService.ts`, `routes/hubspot.ts` |
 | **Slack** | Notifications, two-way webhooks | `routes/slack.ts` |
 | **Sentry** | Error monitoring (both FE + BE) | `utils/sentry.ts` |

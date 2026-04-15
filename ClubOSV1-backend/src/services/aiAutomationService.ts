@@ -1,7 +1,7 @@
 import { logger } from '../utils/logger';
 import { db } from '../utils/database';
 import { openPhoneService } from './openphoneService';
-import ninjaoneService from './ninjaone';
+import { triggerRestart, triggerLocationCommand } from './trackmanRestartService';
 import { isAutomationEnabled, logAutomationUsage } from '../routes/ai-automations';
 import { assistantService } from './assistantService';
 import { calculateConfidence } from './aiAutomationPatterns';
@@ -1032,57 +1032,70 @@ export class AIAutomationService {
   }
 
   /**
-   * Execute Trackman reset via NinjaOne
+   * Execute TrackMan reset through the TrackMan agent command queue.
+   *
+   * NOTE: SMS-triggered AI automation confirmations currently carry bayNumber
+   * and conversationId but not location. To route through triggerRestart() we
+   * need to resolve location from the conversation (e.g., via HubSpot contact
+   * metadata or prior message history). Until that resolver exists, this method
+   * logs and no-ops. The dashboard path (routes/remoteActions.ts) works today.
    */
-  private async executeTrackmanReset(bayNumber: string | null, _conversationId?: string) {
-    try {
-      // TODO: Get device ID from bay number mapping
-      const deviceId = 'TRACKMAN_DEVICE_ID'; // This should be mapped from config
-      const scriptId = 'TRACKMAN_RESET_SCRIPT_ID';
-      
-      const job = await ninjaoneService.executeScript(deviceId, scriptId, { bayNumber });
-      
-      logger.info('Trackman reset initiated', { bayNumber, jobId: job.jobId });
-      
-      // TODO: Monitor job status and send completion message
-    } catch (error) {
-      logger.error('Failed to execute Trackman reset:', error);
-      throw error;
+  private async executeTrackmanReset(bayNumber: string | null, conversationId?: string) {
+    const location = await this.resolveLocationFromConversation(conversationId);
+    if (!location || !bayNumber) {
+      logger.warn('Trackman reset skipped — missing location or bayNumber', { bayNumber, conversationId });
+      return;
     }
+    const result = await triggerRestart(location, parseInt(bayNumber, 10), 'clubai', null, 'restart');
+    if (!result.success) {
+      logger.error('Trackman reset failed:', result.error);
+      return;
+    }
+    logger.info('Trackman reset queued via agent', { bayNumber, location, commandId: result.commandId });
   }
-  
+
   /**
-   * Execute Simulator reboot via NinjaOne
+   * Execute simulator PC reboot through the TrackMan agent command queue.
+   * See note on executeTrackmanReset — same location-resolution caveat applies.
    */
-  private async executeSimulatorReboot(bayNumber: string | null, _conversationId?: string) {
-    try {
-      const deviceId = 'SIMULATOR_DEVICE_ID';
-      const scriptId = 'SIMULATOR_REBOOT_SCRIPT_ID';
-      
-      const job = await ninjaoneService.executeScript(deviceId, scriptId, { bayNumber });
-      
-      logger.info('Simulator reboot initiated', { bayNumber, jobId: job.jobId });
-    } catch (error) {
-      logger.error('Failed to execute simulator reboot:', error);
-      throw error;
+  private async executeSimulatorReboot(bayNumber: string | null, conversationId?: string) {
+    const location = await this.resolveLocationFromConversation(conversationId);
+    if (!location || !bayNumber) {
+      logger.warn('Simulator reboot skipped — missing location or bayNumber', { bayNumber, conversationId });
+      return;
     }
+    const result = await triggerRestart(location, parseInt(bayNumber, 10), 'clubai', null, 'reboot');
+    if (!result.success) {
+      logger.error('Simulator reboot failed:', result.error);
+      return;
+    }
+    logger.info('Simulator reboot queued via agent', { bayNumber, location, commandId: result.commandId });
   }
-  
+
   /**
-   * Execute TV restart via NinjaOne
+   * Execute TV restart through the TrackMan agent command queue (location-wide).
+   * See note on executeTrackmanReset — same location-resolution caveat applies.
    */
-  private async executeTVRestart(bayNumber: string | null, _conversationId?: string) {
-    try {
-      const deviceId = 'TV_DEVICE_ID';
-      const scriptId = 'TV_RESTART_SCRIPT_ID';
-      
-      const job = await ninjaoneService.executeScript(deviceId, scriptId, { bayNumber });
-      
-      logger.info('TV restart initiated', { bayNumber, jobId: job.jobId });
-    } catch (error) {
-      logger.error('Failed to execute TV restart:', error);
-      throw error;
+  private async executeTVRestart(_bayNumber: string | null, conversationId?: string) {
+    const location = await this.resolveLocationFromConversation(conversationId);
+    if (!location) {
+      logger.warn('TV restart skipped — no location resolved', { conversationId });
+      return;
     }
+    const result = await triggerLocationCommand(location, 'restart-tv', 'clubai', null);
+    if (!result.success) {
+      logger.error('TV restart failed:', result.error);
+      return;
+    }
+    logger.info('TV restart queued via agent', { location, commandId: result.commandId });
+  }
+
+  /**
+   * Stub resolver — returns null until SMS→location mapping is wired up.
+   * Future: look up openphone_conversations → associated HubSpot contact/booking → location.
+   */
+  private async resolveLocationFromConversation(_conversationId?: string): Promise<string | null> {
+    return null;
   }
   
   /**

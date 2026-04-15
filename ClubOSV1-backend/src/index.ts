@@ -46,7 +46,6 @@ import systemConfigRoutes from './routes/system-config';
 import analyticsRoutes from './routes/analytics';
 import checklistsRoutes from './routes/checklists-v2-enhanced';
 import remoteActionsRoutes from './routes/remoteActions';
-import ninjaoneSyncRoutes from './routes/ninjaone-sync';
 import doorAccessRoutes from './routes/doorAccess';
 import openphoneRoutes from './routes/openphone';
 import openphoneV3Routes from './routes/openphone-v3';
@@ -279,8 +278,6 @@ app.use('/api/checklists-v2', checklistsRoutes); // New path for v2 frontend
 app.use('/api/checklists-people', checklistsPeopleRoutes); // People category - weekly task management
 app.use('/api/remote-actions', remoteActionsRoutes);
 app.use('/api/door-access', doorAccessRoutes);
-app.use('/api/ninjaone-remote', require('./routes/ninjaone-remote').default);
-app.use('/api/ninjaone', ninjaoneSyncRoutes);
 // app.use('/api/debug', debugRoutes); // File doesn't exist
 app.use('/api/openphone', openphoneRoutes);
 app.use('/api/openphone-v3', openphoneV3Routes);

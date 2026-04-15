@@ -71,11 +71,6 @@ router.get('/all', authenticate, async (req: Request, res: Response) => {
       hubspotIntegration: !!process.env.HUBSPOT_API_KEY
     };
 
-    // Check NinjaOne configuration
-    status.integrations.ninjaone = {
-      configured: !!(process.env.NINJAONE_CLIENT_ID && process.env.NINJAONE_CLIENT_SECRET)
-    };
-
     // Service health checks
     status.services = {
       api: 'operational',

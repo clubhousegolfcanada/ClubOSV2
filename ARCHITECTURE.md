@@ -156,7 +156,7 @@ Customer Message → Pattern Matcher → Confidence Check → Action
 - **Slack integration** for team alerts
 
 ### 5. Remote Facility Control
-- **NinjaOne RMM** for computer management
+- **Custom TrackMan agent** — .exe installed on each bay PC, polls `/api/trackman-remote` every 30 seconds with device API key to pick up queued restart/reboot commands
 - **UniFi Access** for door control
 - **Wake-on-LAN** for simulator PCs
 - **Cloudflare Tunnels** for secure remote access
@@ -215,7 +215,7 @@ Customer Message → Pattern Matcher → Confidence Check → Action
 | OpenPhone | SMS messaging | API Key + Webhook |
 | Slack | Team notifications | Webhook URL |
 | HubSpot | CRM integration | Private App Key |
-| NinjaOne | RMM for computers | OAuth 2.0 |
+| TrackMan Agent (custom) | Bay PC restart/reboot via 30s polling | Per-device API key (`X-Device-Key` header) |
 | UniFi Access | Door control | Local API |
 | Stripe | Payment processing | Secret Key |
 | TrackMan | Golf simulator data | API Key |

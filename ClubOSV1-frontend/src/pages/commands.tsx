@@ -217,7 +217,7 @@ const commands: Command[] = [
     category: 'resets',
     type: 'action',
     keywords: ['reset', 'restart', 'trackman', 'bedford', 'bay 1'],
-    action: 'ninjaone',
+    action: 'trackman-agent',
     location: 'Bedford',
     bayNumber: '1'
   },
@@ -228,7 +228,7 @@ const commands: Command[] = [
     category: 'resets',
     type: 'action',
     keywords: ['reset', 'restart', 'trackman', 'bedford', 'bay 2'],
-    action: 'ninjaone',
+    action: 'trackman-agent',
     location: 'Bedford',
     bayNumber: '2'
   },
@@ -239,7 +239,7 @@ const commands: Command[] = [
     category: 'resets',
     type: 'action',
     keywords: ['reset', 'restart', 'music', 'bedford', 'audio'],
-    action: 'ninjaone',
+    action: 'trackman-agent',
     location: 'Bedford',
     systemType: 'music'
   },
@@ -250,7 +250,7 @@ const commands: Command[] = [
     category: 'resets',
     type: 'action',
     keywords: ['reset', 'restart', 'tv', 'tournament', 'bedford'],
-    action: 'ninjaone',
+    action: 'trackman-agent',
     location: 'Bedford',
     systemType: 'tv'
   },
@@ -263,7 +263,7 @@ const commands: Command[] = [
     category: 'resets',
     type: 'action',
     keywords: ['reset', 'restart', 'trackman', 'dartmouth', 'bay 1'],
-    action: 'ninjaone',
+    action: 'trackman-agent',
     location: 'Dartmouth',
     bayNumber: '1'
   },
@@ -274,7 +274,7 @@ const commands: Command[] = [
     category: 'resets',
     type: 'action',
     keywords: ['reset', 'restart', 'trackman', 'dartmouth', 'bay 2'],
-    action: 'ninjaone',
+    action: 'trackman-agent',
     location: 'Dartmouth',
     bayNumber: '2'
   },
@@ -285,7 +285,7 @@ const commands: Command[] = [
     category: 'resets',
     type: 'action',
     keywords: ['reset', 'restart', 'trackman', 'dartmouth', 'bay 3'],
-    action: 'ninjaone',
+    action: 'trackman-agent',
     location: 'Dartmouth',
     bayNumber: '3'
   },
@@ -296,7 +296,7 @@ const commands: Command[] = [
     category: 'resets',
     type: 'action',
     keywords: ['reset', 'restart', 'trackman', 'dartmouth', 'bay 4'],
-    action: 'ninjaone',
+    action: 'trackman-agent',
     location: 'Dartmouth',
     bayNumber: '4'
   },
@@ -307,7 +307,7 @@ const commands: Command[] = [
     category: 'resets',
     type: 'action',
     keywords: ['reset', 'restart', 'music', 'dartmouth', 'audio'],
-    action: 'ninjaone',
+    action: 'trackman-agent',
     location: 'Dartmouth',
     systemType: 'music'
   },
@@ -318,7 +318,7 @@ const commands: Command[] = [
     category: 'resets',
     type: 'action',
     keywords: ['reset', 'restart', 'tv', 'tournament', 'dartmouth'],
-    action: 'ninjaone',
+    action: 'trackman-agent',
     location: 'Dartmouth',
     systemType: 'tv'
   },
@@ -334,7 +334,7 @@ const commands: Command[] = [
     category: 'resets',
     type: 'action',
     keywords: ['reset', 'restart', 'trackman', 'bayers lake', 'bay 1'],
-    action: 'ninjaone',
+    action: 'trackman-agent',
     location: 'Bayers Lake',
     bayNumber: '1'
   },
@@ -345,7 +345,7 @@ const commands: Command[] = [
     category: 'resets',
     type: 'action',
     keywords: ['reset', 'restart', 'trackman', 'bayers lake', 'bay 2'],
-    action: 'ninjaone',
+    action: 'trackman-agent',
     location: 'Bayers Lake',
     bayNumber: '2'
   },
@@ -356,7 +356,7 @@ const commands: Command[] = [
     category: 'resets',
     type: 'action',
     keywords: ['reset', 'restart', 'trackman', 'bayers lake', 'bay 3'],
-    action: 'ninjaone',
+    action: 'trackman-agent',
     location: 'Bayers Lake',
     bayNumber: '3'
   },
@@ -367,7 +367,7 @@ const commands: Command[] = [
     category: 'resets',
     type: 'action',
     keywords: ['reset', 'restart', 'trackman', 'bayers lake', 'bay 4'],
-    action: 'ninjaone',
+    action: 'trackman-agent',
     location: 'Bayers Lake',
     bayNumber: '4'
   },
@@ -378,7 +378,7 @@ const commands: Command[] = [
     category: 'resets',
     type: 'action',
     keywords: ['reset', 'restart', 'music', 'bayers lake', 'audio'],
-    action: 'ninjaone',
+    action: 'trackman-agent',
     location: 'Bayers Lake',
     systemType: 'music'
   },
@@ -389,7 +389,7 @@ const commands: Command[] = [
     category: 'resets',
     type: 'action',
     keywords: ['reset', 'restart', 'tv', 'tournament', 'bayers lake'],
-    action: 'ninjaone',
+    action: 'trackman-agent',
     location: 'Bayers Lake',
     systemType: 'tv'
   },
@@ -402,7 +402,7 @@ const commands: Command[] = [
     category: 'resets',
     type: 'action',
     keywords: ['reset', 'restart', 'trackman', 'truro', 'bay 1'],
-    action: 'ninjaone',
+    action: 'trackman-agent',
     location: 'Truro',
     bayNumber: '1'
   },
@@ -413,7 +413,7 @@ const commands: Command[] = [
     category: 'resets',
     type: 'action',
     keywords: ['reset', 'restart', 'trackman', 'truro', 'bay 2'],
-    action: 'ninjaone',
+    action: 'trackman-agent',
     location: 'Truro',
     bayNumber: '2'
   },
@@ -424,7 +424,7 @@ const commands: Command[] = [
     category: 'resets',
     type: 'action',
     keywords: ['reset', 'restart', 'trackman', 'truro', 'bay 3'],
-    action: 'ninjaone',
+    action: 'trackman-agent',
     location: 'Truro',
     bayNumber: '3'
   },
@@ -435,7 +435,7 @@ const commands: Command[] = [
     category: 'resets',
     type: 'action',
     keywords: ['reset', 'restart', 'music', 'truro', 'audio'],
-    action: 'ninjaone',
+    action: 'trackman-agent',
     location: 'Truro',
     systemType: 'music'
   },
@@ -446,7 +446,7 @@ const commands: Command[] = [
     category: 'resets',
     type: 'action',
     keywords: ['reset', 'restart', 'tv', 'tournament', 'truro'],
-    action: 'ninjaone',
+    action: 'trackman-agent',
     location: 'Truro',
     systemType: 'tv'
   },
@@ -459,7 +459,7 @@ const commands: Command[] = [
     category: 'resets',
     type: 'action',
     keywords: ['reset', 'restart', 'trackman', 'river oaks', 'bay 1'],
-    action: 'ninjaone',
+    action: 'trackman-agent',
     location: 'River Oaks',
     bayNumber: '1'
   },
@@ -470,7 +470,7 @@ const commands: Command[] = [
     category: 'resets',
     type: 'action',
     keywords: ['reset', 'restart', 'music', 'river oaks', 'audio'],
-    action: 'ninjaone',
+    action: 'trackman-agent',
     location: 'River Oaks',
     systemType: 'music'
   },
@@ -481,7 +481,7 @@ const commands: Command[] = [
     category: 'resets',
     type: 'action',
     keywords: ['reset', 'restart', 'trackman', 'all bays', 'all boxes'],
-    action: 'ninjaone'
+    action: 'trackman-agent'
   },
   {
     id: 'reboot-simulator-pc',
@@ -490,7 +490,7 @@ const commands: Command[] = [
     category: 'resets',
     type: 'action',
     keywords: ['reboot', 'restart', 'pc', 'computer'],
-    action: 'ninjaone'
+    action: 'trackman-agent'
   }
 ];
 

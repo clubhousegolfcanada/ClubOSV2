@@ -446,7 +446,7 @@ export const OperationsPatterns: React.FC = () => {
                 <div className="flex-1">
                   <h3 className="font-medium text-[var(--text-primary)]">Trackman Reset</h3>
                   <p className="text-sm text-[var(--text-secondary)] mt-1">
-                    Automatically reset frozen or unresponsive Trackman units via NinjaOne
+                    Automatically reset frozen or unresponsive Trackman units via the TrackMan agent
                   </p>
                   <span className="inline-block mt-2 text-xs font-medium px-2 py-1 bg-purple-100 text-purple-700 rounded">
                     technical
