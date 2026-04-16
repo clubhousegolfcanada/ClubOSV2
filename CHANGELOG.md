@@ -2,6 +2,13 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.35.1] - 2026-04-16
+
+### Fixed — Receipt ZIP export missing all photo/PDF attachments
+- **`routes/receipts-simple.ts`**: ZIP export was silently producing archives with only the CSV metadata and manifest — no receipt images or PDFs. Root cause: the streaming-export refactor (v1.25.26) narrowed the main receipts SELECT to exclude `file_data` (for memory reasons) but left the downstream `receipts.filter(r => r.file_data)` in place to build `receiptIdsWithPhotos`. Since `file_data` was no longer selected, that filter always returned `[]`, the batch-fetch loop never ran, and no attachments were appended to the archive. Bug was unrelated to the v1.25.45 JPEG→PDF storage switch but became more visible around that time.
+- **Fix**: replaced the in-memory filter with a dedicated lightweight `SELECT r.id FROM receipts r ... WHERE r.file_data IS NOT NULL` query that reuses the same date filter as the main export query. This keeps the memory-safe intent of the original refactor (no base64 payloads pulled into the metadata query) while correctly identifying which receipts have stored files.
+- **Side effect restored**: the CSV's "Has Photo" column and the manifest's `receiptsWithPhotos` count will now reflect reality.
+
 ## [1.35.0] - 2026-04-15
 
 ### Removed — NinjaOne Integration (replaced by TrackMan agent)

@@ -398,10 +398,17 @@ router.get('/export', authenticate, async (req: Request, res: Response) => {
       // Pipe archive data to response
       archive.pipe(res);
 
-      // Get receipt IDs that have photos for batch processing
-      const receiptIdsWithPhotos = receipts
-        .filter((r: any) => r.file_data)
-        .map((r: any) => r.id);
+      // Get receipt IDs that have photos for batch processing.
+      // NOTE: The main SELECT above deliberately omits file_data (to avoid
+      // loading every base64 payload into memory). That means we cannot tell
+      // from `receipts` alone which rows have a stored file, so we run a
+      // separate lightweight query that returns only IDs where file_data
+      // IS NOT NULL, applying the same date filter.
+      const photoIdsQuery = dateFilter
+        ? `SELECT r.id FROM receipts r ${dateFilter} AND r.file_data IS NOT NULL ORDER BY r.created_at DESC`
+        : `SELECT r.id FROM receipts r WHERE r.file_data IS NOT NULL ORDER BY r.created_at DESC`;
+      const photoIdsResult = await db.query(photoIdsQuery, queryParams);
+      const receiptIdsWithPhotos = photoIdsResult.rows.map((r: any) => r.id);
 
       // Add CSV metadata file (without file_data - already excluded in main query for CSV/JSON)
       const csvData = receipts.map((receipt: any) => ({
