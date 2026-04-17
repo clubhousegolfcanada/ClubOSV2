@@ -65,10 +65,10 @@ These files handle database access. Know which does what:
 | `utils/database-helpers.ts` | Column existence checks, OpenPhone-specific helpers | **ACTIVE** (4 imports) |
 | `utils/ticketDb.ts` | Ticket-specific query interfaces and wrapper | **ACTIVE** |
 | `utils/openphone-db-helpers.ts` | OpenPhone insert/update conversation helpers | **ACTIVE** (4 imports) |
-| `utils/db-pool.ts` | DEPRECATED — re-exports from db.ts | **DO NOT IMPORT** |
-| `utils/database-migrations.ts` | LEGACY — all migration code skipped at startup | **DO NOT USE** |
+| `utils/db-pool.ts` | DEPRECATED — re-exports from db.ts. One legacy consumer remains: `scripts/update-ai-prompt-email.js` (9-month-old one-off). | **DO NOT IMPORT in new code** |
+| `utils/database-migrations.ts` | LEGACY runner, still called at startup from `utils/database.ts:140`. All 5 embedded migrations are idempotent no-ops against the current prod schema (column renames already applied; `CREATE TABLE IF NOT EXISTS`). Still wired in; do not add new migrations here. | **ACTIVE but historical** |
 
-**Active migrations** run via numbered SQL files in `src/database/migrations/`, NOT via the migration runner files.
+**Active migrations** run via numbered SQL files in `src/database/migrations/`. Add new migrations there — NOT to `database-migrations.ts`. The legacy runner still fires on boot but exists only as a historical safety net (column renames from the Users → users consolidation and early table creates).
 
 ## KEY FILE MAP
 
@@ -90,8 +90,8 @@ These files handle database access. Know which does what:
 ## DEAD CODE / DO NOT TOUCH
 
 - `ClubOSV1-backend/archive/` — Old scripts, docs, tests from prior refactors. Never imported by active code. Ignore entirely.
-- `utils/db-pool.ts` — Deprecated wrapper, do not import (use `db.ts` instead)
-- `utils/database-migrations.ts` — Legacy migration runner, all code skipped. Active migrations use SQL files in `src/database/migrations/`
+- `utils/db-pool.ts` — Deprecated wrapper (re-exports from `db.ts`). One legacy consumer remains: `scripts/update-ai-prompt-email.js`. Do not import in new code; use `db.ts` instead.
+- `utils/database-migrations.ts` — **STILL WIRED IN** (imported at `utils/database.ts:5`, called at line 140). Runs on every startup but all migrations are idempotent no-ops against the current schema. Do not add new migrations here — use SQL files in `src/database/migrations/`.
 - `index.ts` lines ~255-265 — Commented-out v2 route mounts. Leave commented until full migration is ready.
 - `index.ts` lines ~377+ — `require()` style imports (mixed with ES imports at top). Do not "fix" without a plan.
 - **NinjaOne is DEPRECATED and no longer in use.** We replaced it with our own TrackMan agent .exe (see TrackMan Agent integration). Any remaining NinjaOne files (`services/ninjaone.ts`, `routes/ninjaone-*.ts`, `config/ninjaDevices.ts`, `frontend/src/api/ninjaoneRemote.ts`, `scripts/deployment/*ninjaone*`, `docs/archive/ninjaone-scripts/`) are dead. The `DEMO-*` device IDs in `routes/remoteActions.ts` are placeholders that were never populated. Restart/reboot actions already route through `trackmanRestartService.triggerRestart()`. Music/TV/other-action branches in `remoteActions.ts` still reference NinjaOne but are non-functional. Do not reintroduce NinjaOne; rewire remaining actions through the TrackMan agent command queue or remove them.
