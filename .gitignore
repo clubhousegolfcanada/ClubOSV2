@@ -41,6 +41,22 @@ lerna-debug.log*
 ehthumbs.db
 Thumbs.db
 
+# macOS Finder custom-icon stubs (name is literally "Icon" + carriage return)
+Icon
+**/Icon?
+Icon\r
+
+# Next.js SWC build cache
+.swc/
+**/.swc/
+
+# Unversioned local state at repo root
+/ClubhouseAI/
+/TMCourseSync.exe
+/Quo Messages..csv
+/database-backups/
+/data/
+
 # Testing
 coverage/
 .nyc_output/
