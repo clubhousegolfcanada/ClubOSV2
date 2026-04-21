@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.35.2] - 2026-04-21
+
+### Removed — Misleading "Other System Actions" tile on commands page
+- **`pages/commands.tsx`**: Deleted the standalone "Reboot Simulator PC" tile inside the "Other System Actions" collapsible section. The tile's label promised a PC reboot, but its onClick routed through `handleExecuteReset()` with no bayNumber/systemType, so it fell through to the default `restart-trackman` action — i.e. clicking "Reboot PC" only restarted TrackMan software, and on an arbitrary device at that. Per-bay PC reboots remain available via the red **PC** button on each Box Controls row (`action: 'reboot-pc'` → TrackMan agent `Restart-Computer -Force`).
+- Removed the now-unused `reboot-simulator-pc` command definition, the entire `'other-systems'` collapsible section, `expandedSections` state, `toggleSection()` helper, and unused `ChevronDown`/`ChevronRight` imports.
+
+### Fixed — TrackMan agent console window flashing every minute on bay PCs
+- **`trackman-agent/main.go`** (external installer, not part of the web app deploy): the scheduled task invoked `powershell.exe -WindowStyle Hidden` directly, which shows a ~1s conhost.exe flash on every run because the console host window is created before PowerShell parses the `-WindowStyle` argument. With `RepetitionInterval 1 minute` the flash was visible to customers once per minute.
+- **Fix**: installer now also writes `C:\ClubOS\trackman-agent.vbs` that invokes PowerShell through `WScript.Shell.Run(..., 0, False)`, and registers the scheduled task against `wscript.exe` instead of `powershell.exe`. `wscript.exe` is a windowless host — no console is ever created. Uninstall flow removes the .vbs alongside the .ps1. Bay PCs need the updated `TrackMan Agent Installer.exe` run once (Uninstall → Register & Install) to re-register the task.
+
 ## [1.35.1] - 2026-04-16
 
 ### Fixed — Receipt ZIP export missing all photo/PDF attachments

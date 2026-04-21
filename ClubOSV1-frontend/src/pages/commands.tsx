@@ -7,8 +7,6 @@ import {
   Search,
   Zap,
   Loader2,
-  ChevronDown,
-  ChevronRight,
   AlertCircle,
   Terminal,
   Shield,
@@ -482,15 +480,6 @@ const commands: Command[] = [
     type: 'action',
     keywords: ['reset', 'restart', 'trackman', 'all bays', 'all boxes'],
     action: 'trackman-agent'
-  },
-  {
-    id: 'reboot-simulator-pc',
-    name: 'Reboot Simulator PC',
-    description: 'Fully reboot a simulator PC (specify box in request)',
-    category: 'resets',
-    type: 'action',
-    keywords: ['reboot', 'restart', 'pc', 'computer'],
-    action: 'trackman-agent'
   }
 ];
 
@@ -540,9 +529,6 @@ export default function CommandsRedesigned() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   // Search removed for cleaner UI
   const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    'other-systems': false
-  });
   const [executingDoorAction, setExecutingDoorAction] = useState<Set<string>>(new Set());
 
   // SECURITY: Check authentication and block customer role
@@ -668,13 +654,6 @@ export default function CommandsRedesigned() {
         clearInterval(interval);
       }
     }, 5000);
-  };
-
-  const toggleSection = (section: string) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
   };
 
   if (!user) {
@@ -901,50 +880,7 @@ export default function CommandsRedesigned() {
 
                 {/* Additional Controls */}
                 <div className="mt-6 space-y-6">
-                  {/* Other System Actions */}
-                  <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl overflow-hidden">
-                  <button
-                    onClick={() => toggleSection('other-systems')}
-                    className="w-full px-6 py-4 flex items-center justify-between hover:bg-[var(--bg-tertiary)] transition-colors"
-                  >
-                    <h3 className="text-lg font-medium text-[var(--text-primary)]">Other System Actions</h3>
-                    {expandedSections['other-systems'] ? (
-                      <ChevronDown className="w-5 h-5 text-[var(--text-muted)]" />
-                    ) : (
-                      <ChevronRight className="w-5 h-5 text-[var(--text-muted)]" />
-                    )}
-                  </button>
-                  
-                  {expandedSections['other-systems'] && (
-                    <div className="p-6 pt-0 space-y-4">
-                      {/* PC Reboot */}
-                      {filteredTriggers.filter(t => t.id === 'reboot-simulator-pc').map((trigger) => (
-                        <div
-                          key={trigger.id}
-                          className="bg-[var(--bg-tertiary)] rounded-xl p-4 border border-[var(--border-secondary)] flex items-center justify-between"
-                        >
-                          <div>
-                            <h4 className="text-sm font-medium text-[var(--text-primary)]">
-                              {trigger.name}
-                            </h4>
-                            <p className="text-xs text-[var(--text-secondary)] font-light mt-1">
-                              {trigger.description}
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => handleExecuteReset(trigger)}
-                            className="ml-4 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-all flex items-center gap-2 group"
-                          >
-                            <Power className="w-3.5 h-3.5" />
-                            Reboot PC
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Reset All Bays - Less Prominent */}
+                  {/* Reset All Bays - Less Prominent */}
                 <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl p-6">
                   <div className="flex items-center justify-between">
                     <div>
