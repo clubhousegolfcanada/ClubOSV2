@@ -452,6 +452,10 @@ router.post('/report', authenticateDevice as any, async (req: DeviceRequest, res
     );
 
     if (cmdSuccess) {
+      // Updates the "Last restart" timestamp shown in the TrackMan panel UI
+      // (TrackManPanel.tsx:420). Cooldown enforcement lives in
+      // trackmanRestartService.ts and now queries trackman_restart_commands
+      // history per command type, not this column.
       await query(
         'UPDATE trackman_devices SET last_restart_at = NOW() WHERE id = $1',
         [req.device!.id]

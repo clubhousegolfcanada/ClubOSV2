@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.35.4] - 2026-04-23
+
+### Changed — Per-command-type cooldowns for TrackMan agent
+- **`services/trackmanRestartService.ts`**: cooldown enforcement split from a single shared 10-minute lockout into per-type cooldowns — `restart` (TrackMan software): 5 min, `reboot` (full PC reboot): 10 min, `restart-all` (TrackMan + browser): 10 min. Lightweight commands (projector input, music/TV) still skip the cooldown entirely.
+- **Fixes the shared-cooldown UX bug**: previously a TrackMan restart blocked a subsequent PC reboot for 10 minutes even though they're different operations. Now each command type cools down against its own history only — you can restart TrackMan and immediately reboot the PC if needed.
+- **Cooldown source switched from state to history**: the check no longer reads `trackman_devices.last_restart_at`; it now queries the `trackman_restart_commands` queue (filtered by `device_id + command_type + recent status`). Self-healing if the devices row ever drifts out of sync, and tracks per-type naturally without schema changes.
+- **Better error messages**: blocked requests now report the specific command type in cooldown (e.g. *"Last reboot was 3 min ago. Wait at least 10 minutes between reboot commands."*) instead of the generic *"Device was restarted N minutes ago."*
+
+### Clarified — `last_restart_at` column purpose after cooldown refactor
+- **`routes/trackman-remote.ts:454`**: added a comment noting that the post-restart `UPDATE trackman_devices SET last_restart_at = NOW()` feeds the "Last restart" timestamp shown in the TrackMan panel UI (`TrackManPanel.tsx:420`). Cooldown enforcement is no longer coupled to this column — avoids future confusion about why the write is still there.
+
 ## [1.35.3] - 2026-04-23
 
 ### Removed — Orphan UniFi services and dead correction route

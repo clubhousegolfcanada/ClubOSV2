@@ -58,13 +58,14 @@ const LOCATION_LEVEL_COMMANDS: ReadonlySet<TrackmanCommandType> = new Set([
   'other',
 ]);
 
-// Commands that trip the 10-minute cooldown + update last_restart_at.
-// Lightweight commands (projector input change, etc.) skip this.
-const COOLDOWN_COMMANDS: ReadonlySet<TrackmanCommandType> = new Set([
-  'restart',
-  'reboot',
-  'restart-all',
-]);
+// Per-command cooldowns. Each command type cools down against its own history
+// only — a TrackMan restart does not block a PC reboot, and vice versa.
+// Lightweight commands (projector input change, etc.) are absent and skip the check.
+const COOLDOWN_MS: Partial<Record<TrackmanCommandType, number>> = {
+  'restart':     5 * 60 * 1000,   // TrackMan software restart
+  'reboot':      10 * 60 * 1000,  // Full PC reboot
+  'restart-all': 10 * 60 * 1000,  // TrackMan + browser
+};
 
 /**
  * Trigger a TrackMan restart for a specific location + bay.
@@ -89,7 +90,7 @@ export async function triggerRestart(
 
     // Find device
     const deviceResult = await query(
-      'SELECT id, display_name, last_restart_at FROM trackman_devices WHERE location = $1 AND bay_number = $2',
+      'SELECT id, display_name FROM trackman_devices WHERE location = $1 AND bay_number = $2',
       [location, bayNumber]
     );
 
@@ -99,12 +100,23 @@ export async function triggerRestart(
 
     const device = deviceResult.rows[0];
 
-    // Safety: check 10-minute cooldown (only for heavy commands)
-    if (COOLDOWN_COMMANDS.has(commandType) && device.last_restart_at) {
-      const timeSinceLastRestart = Date.now() - new Date(device.last_restart_at).getTime();
-      if (timeSinceLastRestart < 10 * 60 * 1000) {
-        const minutesAgo = Math.floor(timeSinceLastRestart / 60000);
-        return { success: false, error: `Device was restarted ${minutesAgo} minutes ago. Wait at least 10 minutes between restarts.` };
+    // Safety: per-type cooldown. Only blocks a repeat of the same command type.
+    const cooldownMs = COOLDOWN_MS[commandType];
+    if (cooldownMs) {
+      const recent = await query(
+        `SELECT requested_at FROM trackman_restart_commands
+         WHERE device_id = $1 AND command_type = $2
+           AND status IN ('pending','acknowledged','completed')
+           AND requested_at > NOW() - ($3 || ' milliseconds')::interval
+         ORDER BY requested_at DESC
+         LIMIT 1`,
+        [device.id, commandType, cooldownMs]
+      );
+      if (recent.rows.length > 0) {
+        const timeSince = Date.now() - new Date(recent.rows[0].requested_at).getTime();
+        const minutesAgo = Math.max(1, Math.floor(timeSince / 60000));
+        const cooldownMin = Math.round(cooldownMs / 60000);
+        return { success: false, error: `Last ${commandType} was ${minutesAgo} min ago. Wait at least ${cooldownMin} minutes between ${commandType} commands.` };
       }
     }
 
