@@ -1,4 +1,4 @@
-# ClubOS v1.35.2 - Facility Management System
+# ClubOS v1.35.3 - Facility Management System
 
 Production system for Clubhouse 24/7 — managing golf simulators, pickleball courts, gyms, and other facilities with AI-powered customer support, automated operations, and remote facility control.
 
@@ -8,7 +8,7 @@ Production system for Clubhouse 24/7 — managing golf simulators, pickleball co
 
 - **Frontend**: Next.js 15, TypeScript, Tailwind CSS → Vercel
 - **Backend**: Node.js, Express, PostgreSQL, Redis → Railway
-- **AI**: OpenAI GPT-4 Assistants, V3-PLS Pattern Learning System
+- **AI**: ClubAI (GPT-4o with function-calling) — handles inbound SMS via RAG + three-tier escalation, can trigger TrackMan restarts as a tool call
 - **Integrations**: OpenPhone, Slack, HubSpot, UniFi, custom TrackMan agent (polls every 30s for restart commands)
 
 ## Core Features

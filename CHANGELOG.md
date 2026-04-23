@@ -2,6 +2,25 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.35.3] - 2026-04-23
+
+### Removed — Orphan UniFi services and dead correction route
+- **Deleted 8 orphan UniFi service files** (zero production imports): `services/unifiAccess.ts`, `services/unifiAccessAPI.ts`, `services/unifiAccessDirect.ts`, `services/unifiCloudAccess.ts`, `services/unifiCloudAuth.ts`, `services/unifiMultiLocation.ts`, `services/unifiNetworkAccessService.ts`, `services/unifiOfficialAPI.ts`. These were leftover from earlier UniFi integration attempts that were superseded by `services/unifiCloudService.ts` (used by `routes/doorAccess.ts`) and the inline fetches in `routes/unifi-doors.ts`.
+- **Deleted `services/unifi/UniFiAccessService.ts`** and removed the now-empty `services/unifi/` directory. Despite being the newest attempt at a unified door service, nothing in the codebase imported it — `routes/unifi-doors.ts` uses raw `node-fetch` calls instead.
+- **Deleted `services/conversationStateMachine.ts`** — orphan V3-PLS leaf (only imported `patternLearningService`; nothing imported it).
+- **Deleted `routes/corrections.ts`** + its import/mount in `src/index.ts`. Mounted at `/api/corrections` but had zero callers anywhere (frontend and backend). Superseded by the `/api/patterns/clubai-correct` endpoint in `enhanced-patterns.ts`.
+
+### Changed — CLAUDE.md rewritten to reflect actual architecture
+- **AI system description corrected**: ClubAI (GPT-4o via OpenAI Chat Completions with function-calling) is the primary SMS automation. Prior docs described V3-PLS pattern learning as the active system, but V3-PLS has been disabled for auto-response since the ClubAI migration.
+- **Added `CLUBAI ARCHITECTURE` section** documenting the function-calling pattern (current live tool: `restart_trackman`), three-tier escalation via `[ESCALATE TO HUMAN]` tag, RAG via `clubaiKnowledgeService`, and the template for adding new ClubAI tools.
+- **Replaced V3-PLS section** with honest dead-but-still-running documentation: V3-PLS auto-response is disabled (`routes/openphone.ts:1349`) but the operator-outbound learning path in `routes/messages.ts` still calls `patternLearningService.learnFromHumanResponse()` and `aiAutomationService.learnFromStaffResponse()`. Data accumulates in V3-PLS tables but is never read. Full disentanglement is pending a dedicated refactor.
+- **New pitfalls documented**:
+  - Two parallel door route stacks (`/api/door-access` + `/api/unifi-doors`) both mounted and called by the frontend.
+  - `patternSafetyService` is misnamed — actually stores ClubAI operator-lockout thresholds (`operatorLockoutHours`, `globalCooldownMinutes`), read by `messages.ts:617`. DO NOT delete without first extracting the lockout logic.
+  - `enhanced-patterns.ts` is a ~3000-line mixed file serving both V3-PLS admin and live ClubAI admin (`/clubai-*`) routes. Splitting is pending.
+  - Frontend `components/operations/patterns/` directory is mostly legacy V3-PLS UI.
+- **Updated integrations table**: Skedda documented as the primary booking authority (Skedda → HubSpot → Zapier → Access Controller). Access Controller (`access.clubhouse247golf.com`) noted as an external system not yet wired into ClubOS.
+
 ## [1.35.2] - 2026-04-21
 
 ### Removed — Misleading "Other System Actions" tile on commands page

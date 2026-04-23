@@ -57,7 +57,6 @@ import assistantRoutes from './routes/assistant';
 import knowledgeStoreRoutes from './routes/knowledge-store';
 import knowledgeRouterRoutes from './routes/knowledge-router';
 import knowledgeCorrectRoutes from './routes/knowledge-correct';
-import correctionsRoutes from './routes/corrections';
 import debugKnowledgeRoutes from './routes/debug-knowledge';
 import adminRoutes from './routes/admin';
 import publicRoutes from './routes/public';
@@ -291,7 +290,6 @@ app.use('/api/knowledge', knowledgeRoutes);
 // Knowledge routes - only knowledge-router and knowledge-store are actively used
 app.use('/api/knowledge-router', knowledgeRouterRoutes); // Used by KnowledgeRouterPanel in Operations
 app.use('/api/knowledge-correct', knowledgeCorrectRoutes); // Knowledge correction endpoint (old)
-app.use('/api/corrections', correctionsRoutes); // New direct correction endpoint with pattern creation
 app.use('/api/knowledge-store', knowledgeStoreRoutes); // Used internally by knowledgeSearchService
 app.use('/api/debug-knowledge', debugKnowledgeRoutes); // Debug knowledge search
 
