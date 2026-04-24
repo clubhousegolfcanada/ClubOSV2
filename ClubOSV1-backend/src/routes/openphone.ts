@@ -10,7 +10,6 @@ import { ensureOpenPhoneColumns } from '../utils/database-helpers';
 import { insertOpenPhoneConversation } from '../utils/openphone-db-helpers';
 import { hubspotService } from '../services/hubspotService';
 import { aiAutomationService } from '../services/aiAutomationService';
-import { patternLearningService } from '../services/patternLearningService';
 import { patternSafetyService } from '../services/patternSafetyService';
 import { detectMessageTopic, getTopicLabel } from '../utils/topicDetection';
 import { clubaiService } from '../services/clubaiService';
@@ -932,10 +931,6 @@ router.post('/webhook', async (req: Request, res: Response) => {
 
               // Load configurable safety thresholds
               const safetyThresholds = await patternSafetyService.getSafetyThresholds();
-
-              // V3-PLS is DISABLED — ClubAI RAG is the only response system.
-              // Load V3-PLS config only for reference (not used for routing)
-              await patternLearningService.getConfig();
 
               // SAFEGUARD: Check if AI response limit reached - skip for test numbers
               // Only check if AI response limit feature is enabled
