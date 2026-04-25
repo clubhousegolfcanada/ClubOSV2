@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["nodejs-18_x", "npm-9_x", "python3", "python3Packages.pip", "python3Packages.pdfplumber"]
+nixPkgs = ["nodejs_22", "python3", "python3Packages.pip", "python3Packages.pdfplumber"]
 
 [phases.install]
 cmds = [
