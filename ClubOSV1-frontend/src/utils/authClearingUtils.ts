@@ -24,6 +24,7 @@ export const NON_CRITICAL_AUTH_ENDPOINTS = [
   '/system/check',
   '/door-access/',
   '/remote-actions/',
+  '/trackman-remote/',
   '/performance',
   '/devices',
   '/status/'
