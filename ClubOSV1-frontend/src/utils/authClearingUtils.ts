@@ -27,7 +27,8 @@ export const NON_CRITICAL_AUTH_ENDPOINTS = [
   '/trackman-remote/',
   '/performance',
   '/devices',
-  '/status/'
+  '/status/',
+  '/stats/overview'
 ] as const;
 
 /**
