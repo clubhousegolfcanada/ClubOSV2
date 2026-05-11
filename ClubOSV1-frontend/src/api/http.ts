@@ -119,6 +119,27 @@ client.interceptors.response.use(
       const currentPath = window.location.pathname;
       const requestUrl = error.config?.url || '';
 
+      // ROOT-CAUSE PROTECTION: if the failing request used a token that
+      // differs from the current stored token, the request was stale — a
+      // closure-captured old token from a long-lived poll, a request that
+      // raced with login, or a leftover handler in another tab. The current
+      // session may still be valid. Fail this specific request silently
+      // rather than nuking the user's session.
+      //
+      // Genuine session-invalid cases (expired, revoked, rotated JWT_SECRET
+      // with no fresh login yet) all have request token === current token,
+      // so they correctly fall through to the existing logout logic below.
+      if (typeof window !== 'undefined') {
+        const requestAuth = error.config?.headers?.Authorization;
+        const requestToken = typeof requestAuth === 'string' && requestAuth.startsWith('Bearer ')
+          ? requestAuth.slice(7)
+          : undefined;
+        const currentToken = tokenManager.getToken();
+        if (requestToken && currentToken && requestToken !== currentToken) {
+          return Promise.reject(error);
+        }
+      }
+
       // Check if this is a non-critical endpoint (uses centralized constant)
       const isNonCritical = NON_CRITICAL_AUTH_ENDPOINTS.some(endpoint =>
         requestUrl.includes(endpoint)
