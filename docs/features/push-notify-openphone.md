@@ -119,8 +119,8 @@ This simulates an incoming OpenPhone message and verifies push notifications are
 
 Required in backend `.env`:
 ```
-VAPID_PUBLIC_KEY=BPSi4FpNO9pAc_g9_I0rvF5krHxRrh-d2Kl5c1p8tznb87J4JtM8XYLmG2dylr0pfU9vuOPBc_850xkCOdnnhdU
-VAPID_PRIVATE_KEY=N8VNoI2cR_2Y3O9FJG7PszhLYSIomo09Sp0nSB43AzQ
+VAPID_PUBLIC_KEY=<see Railway dashboard>
+VAPID_PRIVATE_KEY=<redacted — see Railway dashboard>
 VAPID_EMAIL=mailto:support@clubhouse247golf.com
 OPENPHONE_WEBHOOK_SECRET=your-webhook-secret
 ```

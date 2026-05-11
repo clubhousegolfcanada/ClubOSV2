@@ -7,7 +7,10 @@
 import pkg from '../ClubOSV1-backend/node_modules/pg/lib/index.js';
 const { Client } = pkg;
 
-const DATABASE_URL = "postgresql://postgres:FnlIdpRyrGXKyzhLEdxTCxuVXJcOyxeI@yamanote.proxy.rlwy.net:31482/railway";
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is required (run with: railway run <script>)');
+}
+const DATABASE_URL = process.env.DATABASE_URL;
 
 async function checkRailway() {
   const client = new Client({

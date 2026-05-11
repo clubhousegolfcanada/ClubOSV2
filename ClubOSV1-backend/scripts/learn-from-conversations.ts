@@ -8,10 +8,11 @@ import { Pool } from 'pg';
 import OpenAI from 'openai';
 import crypto from 'crypto';
 
-const EXTERNAL_DB = 'postgresql://postgres:FnlIdpRyrGXKyzhLEdxTCxuVXJcOyxeI@yamanote.proxy.rlwy.net:31482/railway';
-
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is required (run with: railway run <script>)');
+}
 const db = new Pool({
-  connectionString: EXTERNAL_DB,
+  connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
 

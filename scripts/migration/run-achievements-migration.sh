@@ -2,7 +2,12 @@
 
 # Run only the UP portion of the achievements migration
 
-psql "postgresql://postgres:FnlIdpRyrGXKyzhLEdxTCxuVXJcOyxeI@yamanote.proxy.rlwy.net:31482/railway" << 'EOF'
+if [ -z "$DATABASE_URL" ]; then
+  echo "Error: DATABASE_URL environment variable is required (run with: railway run bash scripts/migration/run-achievements-migration.sh)" >&2
+  exit 1
+fi
+
+psql "$DATABASE_URL" << 'EOF'
 -- Achievement rarity enum
 CREATE TYPE achievement_rarity AS ENUM ('common', 'rare', 'epic', 'legendary');
 

@@ -23,14 +23,17 @@ ClubOS V1 Slack Phase 2 reply tracking has been successfully implemented and dep
 
 ### Current Environment Variables in Railway:
 ```
-DATABASE_URL=postgresql://postgres:FnlIdpRyrGXKyzhLEdxTCxuVXJcOyxeI@postgres.railway.internal:5432/railway
-JWT_SECRET=Sz06D9625KZGR7JlBBglrYRQzKjzEyhzCogNxnzsTwo=
-SESSION_SECRET=9gOhITxvHKCrmGMyqk9vijuwCMMEB1Z8cx9fKNn0e0U=
+DATABASE_URL=<redacted — see Railway dashboard>
+JWT_SECRET=<redacted — see Railway dashboard>
+SESSION_SECRET=<redacted — see Railway dashboard>
 NODE_ENV=production
 PORT=3001
 SLACK_WEBHOOK_URL=[configured]
 SLACK_CHANNEL=#clubos-assistants
 ```
+<!-- NOTE: All secret values previously documented here have been rotated. -->
+<!-- Future rotations: document WHAT was rotated, never paste the new values. -->
+
 
 ## Phase 2: Slack Reply Implementation - COMPLETE ✅
 

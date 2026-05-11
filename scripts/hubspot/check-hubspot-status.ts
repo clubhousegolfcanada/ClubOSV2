@@ -20,8 +20,11 @@ async function checkHubSpotStatus() {
     // This would need auth, so we'll check the database directly
     const pg = await import('../ClubOSV1-backend/node_modules/pg/lib/index.js');
     const { Client } = pg.default;
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL environment variable is required (run with: railway run <script>)');
+    }
     const client = new Client({
-      connectionString: "postgresql://postgres:FnlIdpRyrGXKyzhLEdxTCxuVXJcOyxeI@yamanote.proxy.rlwy.net:31482/railway",
+      connectionString: process.env.DATABASE_URL,
       ssl: { rejectUnauthorized: false }
     });
     

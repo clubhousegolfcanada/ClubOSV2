@@ -7,11 +7,12 @@
 import { Pool } from 'pg';
 import OpenAI from 'openai';
 
-// Use the external Railway database URL
-const EXTERNAL_DATABASE_URL = 'postgresql://postgres:FnlIdpRyrGXKyzhLEdxTCxuVXJcOyxeI@yamanote.proxy.rlwy.net:31482/railway';
-
+// Use the external Railway database URL — provided via DATABASE_URL env var.
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is required (run with: railway run <script>)');
+}
 const db = new Pool({
-  connectionString: EXTERNAL_DATABASE_URL,
+  connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
 

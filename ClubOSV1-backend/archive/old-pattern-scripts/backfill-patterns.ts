@@ -10,9 +10,12 @@ import { Pool } from 'pg';
 import { logger } from '../src/utils/logger';
 import { patternLearningService } from '../src/services/patternLearningService';
 
-// Use external database URL for scripts
+// Use external database URL for scripts — set DATABASE_URL via `railway run`.
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is required (run with: railway run <script>)');
+}
 const db = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://postgres:FnlIdpRyrGXKyzhLEdxTCxuVXJcOyxeI@yamanote.proxy.rlwy.net:31482/railway',
+  connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
 

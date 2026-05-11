@@ -7,8 +7,11 @@
 
 const { Pool } = require('pg');
 
-// Use Railway production database URL
-const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://postgres:FnlIdpRyrGXKyzhLEdxTCxuVXJcOyxeI@yamanote.proxy.rlwy.net:31482/railway';
+// Use Railway production database URL — provided via DATABASE_URL env var.
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is required (run with: railway run <script>)');
+}
+const DATABASE_URL = process.env.DATABASE_URL;
 
 async function checkConnections() {
   const pool = new Pool({

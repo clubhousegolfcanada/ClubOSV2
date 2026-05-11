@@ -8,11 +8,17 @@ Generated and deployed new cryptographically secure 64-character secrets directl
 
 ## New Secrets (Deployed)
 ```
-JWT_SECRET=VE9DjFwvb1kwCQSbgcRqZICVY4wtoYOhfYrvwJRNWIPWYtnl81n5zykVfjRyRVHm
-SESSION_SECRET=C7oyMWHBn8ctW4j5Ixi378yhPWVmhcsDPa-IHyZbrBfExCvMB7-rQZfKj5cqu669
-ENCRYPTION_KEY=3yrHtX_2J6jhqZ7gjG49bzSBRsYhK7ya
+JWT_SECRET=<redacted — see Railway dashboard>
+SESSION_SECRET=<redacted — see Railway dashboard>
+ENCRYPTION_KEY=<redacted — see Railway dashboard>
 SECRET_MIGRATION_MODE=false (migration mode disabled)
 ```
+<!-- HISTORICAL NOTE: The actual secret values originally documented here were
+     committed to a public repo in 2024 and were re-scrubbed during the May 2026
+     incident response. All values have since been rotated. Future rotation docs
+     must NEVER paste the new values — describe what was rotated, where it lives
+     (Railway env vars), and the impact. The values themselves stay in Railway only. -->
+
 
 ## Impact
 - ✅ Production should now start successfully

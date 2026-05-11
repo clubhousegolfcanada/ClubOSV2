@@ -9,9 +9,13 @@ interface QueryMetrics {
   timestamp: Date;
 }
 
-// Create a single connection pool instance
-// Use explicit Railway URL if DATABASE_URL is not set (happens when modules load before dotenv)
-const dbUrl = process.env.DATABASE_URL || 'postgresql://postgres:FnlIdpRyrGXKyzhLEdxTCxuVXJcOyxeI@yamanote.proxy.rlwy.net:31482/railway';
+// Create a single connection pool instance.
+// DATABASE_URL must be set in the environment — never fall back to a hardcoded
+// production URL (a baked-in fallback was the cause of the August 2025 leak).
+const dbUrl = process.env.DATABASE_URL;
+if (!dbUrl) {
+  throw new Error('DATABASE_URL environment variable is required');
+}
 
 const pool = new Pool({
   connectionString: dbUrl,
