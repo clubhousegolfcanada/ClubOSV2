@@ -1,0 +1,68 @@
+title = "ClubOS Gitleaks Configuration"
+
+# Extend gitleaks' default ruleset (covers AWS, GCP, Slack, GitHub, Stripe,
+# OpenAI, generic high-entropy strings, etc.) and add ClubOS-specific rules.
+[extend]
+useDefault = true
+
+# Custom rule: Railway Postgres external proxy URL with credentials.
+# This is the exact pattern of the August 2025 leak — a hardcoded fallback
+# string in db-consolidated.ts that pointed at yamanote.proxy.rlwy.net.
+[[rules]]
+id = "railway-postgres-proxy-url"
+description = "Railway external Postgres connection string with credentials"
+regex = '''postgresql://[^:\s]+:[^@\s]{16,}@[a-z0-9]+\.proxy\.rlwy\.net'''
+tags = ["database", "railway", "credentials"]
+
+# Custom rule: Railway internal Postgres URL with credentials.
+# Even though the internal hostname isn't reachable from outside Railway,
+# committing the password is still bad hygiene — and the same password is
+# typically used on both internal and external endpoints.
+[[rules]]
+id = "railway-postgres-internal-url"
+description = "Railway internal Postgres connection string with credentials"
+regex = '''postgresql://[^:\s]+:[^@\s]{16,}@postgres\.railway\.internal'''
+tags = ["database", "railway", "credentials"]
+
+# Custom rule: env-file-style secret declarations in markdown.
+# Catches the SLACK_REPLY_IMPLEMENTATION.md / SECRET_ROTATION_COMPLETED.md
+# pattern where rotation docs pasted KEY=value pairs into prose.
+[[rules]]
+id = "envfile-secret-in-docs"
+description = "KEY=value secret declaration in markdown/docs"
+regex = '''(?i)(JWT_SECRET|SESSION_SECRET|ENCRYPTION_KEY|VAPID_PRIVATE_KEY|OPENPHONE_WEBHOOK_SECRET|ADMIN_PASSWORD)\s*=\s*[A-Za-z0-9+/=_\-]{20,}'''
+path = '''\.md$'''
+tags = ["docs", "secret"]
+
+# Global allowlist — false positives we don't want flagged.
+[allowlist]
+description = "Test secrets, placeholders, redacted historical values, and CI test config"
+
+# Regex allowlist applies to the secret value itself.
+regexes = [
+  # Test-only values explicitly marked as such
+  '''(?i)test[-_](secret|key|password|token|jwt|session|webhook|encryption)''',
+  '''(?i)testuser:testpass''',  # CI Postgres test credentials
+  '''(?i)test-jwt-secret-for-testing-only''',
+  '''(?i)test-session-secret-for-testing-only''',
+
+  # Documentation placeholders
+  '''(?i)(your_|YOUR_|<your|<redacted|placeholder|GENERATE_|sample|fake|dummy|example|REPLACE_|TODO)''',
+  '''xxx+''',
+  '''_{3,}''',
+
+  # Our explicit redaction tokens (post-cleanup placeholders)
+  '''<redacted''',
+  '''<see Railway dashboard>''',
+]
+
+# Path allowlist — files where placeholder secrets are expected.
+paths = [
+  '''\.env\.example$''',
+  '''\.env\.test$''',
+  # Lockfiles can include base64-like hashes that look secret-shaped but aren't.
+  '''package-lock\.json$''',
+  '''yarn\.lock$''',
+  # Test fixtures.
+  '''__tests__/.*\.(ts|js|json)$''',
+]

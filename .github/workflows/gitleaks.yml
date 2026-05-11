@@ -1,0 +1,38 @@
+name: Gitleaks Secret Scan
+
+# Runs on every push to main/develop and every PR targeting main.
+# Blocks the merge if any new committed content matches the gitleaks
+# ruleset (default + custom rules in .gitleaks.toml at repo root).
+#
+# Context: this was added in response to the May 2026 incident where a
+# Postgres credential committed in August 2025 was found by an external
+# researcher. Goal: prevent any future committed secret from reaching
+# the public repo.
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  # Allow manual runs for ad-hoc full-history scans.
+  workflow_dispatch:
+
+jobs:
+  scan:
+    name: Scan for committed secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
+        with:
+          # fetch-depth: 0 = full history. Required for accurate scanning
+          # of all commits in a PR, not just the latest one.
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GITLEAKS_LICENSE is only required for private repos / orgs.
+          # clubhousegolfcanada/ClubOSV2 is public, so the free tier applies.
+          GITLEAKS_CONFIG: .gitleaks.toml
