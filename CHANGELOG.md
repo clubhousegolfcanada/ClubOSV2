@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.35.5] - 2026-06-12
+
+### Security — Removed hardcoded secrets from source; affected endpoints now fail closed
+- **`routes/golf-tour.ts`**: `adminAuth` middleware no longer compares against a hardcoded password. It now validates against the `GOLF_TOUR_ADMIN_PASSWORD` env var and returns 503 if the var is unset (fail closed). Protects `/api/golf/export/:eventCode` and `/api/golf/stats`.
+- **`routes/setup.ts`**: `/api/setup/setup-database` setup key is no longer hardcoded. It now validates against the `DB_SETUP_KEY` env var and returns 401 if the var is unset (fail closed).
+- **`routes/process-knowledge.ts`**: removed the hardcoded fallback secret on `POST /conversations`; the check now requires `ADMIN_SECRET` to be set and match (fail closed).
+- **`src/index.ts`**: `/api/process-knowledge` mount now requires `authenticate` + `roleGuard(['admin'])` — previously fully unauthenticated, exposing DB stats and a processing trigger.
+- **Frontend `pages/golf/admin.tsx`**: removed the hardcoded admin password from the client bundle. The login form now validates the entered password against the backend (`/api/golf/stats`) and stores the validated password in `sessionStorage` (`golf_admin_key`) for subsequent export/stats calls. Shows a distinct error when the backend has no password configured (503).
+- **`.env.example`**: documented `GOLF_TOUR_ADMIN_PASSWORD`, `DB_SETUP_KEY`, and `ADMIN_SECRET`.
+- **ACTION REQUIRED**: set `GOLF_TOUR_ADMIN_PASSWORD` (new value — do NOT reuse the old leaked password), `DB_SETUP_KEY`, and `ADMIN_SECRET` in Railway. The old values are permanently exposed in public git history and must be treated as burned.
+
 ## [1.35.4] - 2026-04-23
 
 ### Changed — Per-command-type cooldowns for TrackMan agent

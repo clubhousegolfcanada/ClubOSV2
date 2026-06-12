@@ -29,38 +29,61 @@ const GolfAdmin = () => {
   const [error, setError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    // Check if already authenticated (stored in session)
-    const authStatus = sessionStorage.getItem('golf_admin_auth');
-    if (authStatus === 'true') {
+    // Check if already authenticated (validated password stored in session)
+    const storedKey = sessionStorage.getItem('golf_admin_key');
+    if (storedKey) {
       setIsAuthenticated(true);
-      loadStats();
+      loadStats(storedKey);
     }
   }, []);
 
+  // Password is validated by the backend (GOLF_TOUR_ADMIN_PASSWORD env var)
   const handleLogin = async () => {
-    if (password === 'NSGolf2024Admin') {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/golf/stats`, {
+        headers: {
+          'password': password
+        }
+      });
+
+      if (response.status === 401) {
+        setError('Invalid password');
+        return;
+      }
+      if (response.status === 503) {
+        setError('Admin access is not configured on the server');
+        return;
+      }
+      if (!response.ok) throw new Error('Failed to load statistics');
+
+      const data = await response.json();
+      setStats(data);
       setIsAuthenticated(true);
-      sessionStorage.setItem('golf_admin_auth', 'true');
+      sessionStorage.setItem('golf_admin_key', password);
       setError(undefined);
-      loadStats();
-    } else {
-      setError('Invalid password');
+    } catch (err) {
+      setError('Failed to load tournament statistics');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
-    sessionStorage.removeItem('golf_admin_auth');
+    sessionStorage.removeItem('golf_admin_key');
     setPassword('');
     setStats([]);
   };
 
-  const loadStats = async () => {
+  const loadStats = async (adminKey?: string) => {
+    const key = adminKey ?? sessionStorage.getItem('golf_admin_key') ?? '';
     setLoading(true);
     try {
       const response = await fetch(`${API_URL}/api/golf/stats`, {
         headers: {
-          'password': 'NSGolf2024Admin'
+          'password': key
         }
       });
 
@@ -82,7 +105,7 @@ const GolfAdmin = () => {
         `${API_URL}/api/golf/export/${eventCode}?format=${format}`,
         {
           headers: {
-            'password': 'NSGolf2024Admin'
+            'password': sessionStorage.getItem('golf_admin_key') ?? ''
           }
         }
       );
@@ -218,7 +241,7 @@ const GolfAdmin = () => {
             size="lg"
             fullWidth
             icon={Trophy}
-            onClick={loadStats}
+            onClick={() => loadStats()}
           >
             Refresh Statistics
           </Button>

@@ -40,8 +40,8 @@ router.post('/conversations', async (req, res) => {
   try {
     const { secret, limit = 5 } = req.body;
     
-    // Simple secret check for production use
-    if (secret !== process.env.ADMIN_SECRET && secret !== 'process-knowledge-2025') {
+    // Secret check - requires ADMIN_SECRET env var; fails closed if unset
+    if (!process.env.ADMIN_SECRET || secret !== process.env.ADMIN_SECRET) {
       return res.status(401).json({ error: 'Invalid secret' });
     }
 

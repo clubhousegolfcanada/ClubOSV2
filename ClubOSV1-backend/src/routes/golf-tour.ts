@@ -376,11 +376,17 @@ router.get('/player-counts/:eventCode', async (req: Request, res: Response) => {
 // ============================================
 
 // Simple admin authentication middleware
+// Password comes from GOLF_TOUR_ADMIN_PASSWORD env var; fails closed if unset
 const adminAuth = (req: Request, res: Response, next: Function) => {
+  const expectedPassword = process.env.GOLF_TOUR_ADMIN_PASSWORD;
+
+  if (!expectedPassword) {
+    return res.status(503).json({ error: 'Golf tour admin access is not configured' });
+  }
+
   const { password } = req.headers;
 
-  // Simple password check - in production, use proper authentication
-  if (password !== 'NSGolf2024Admin') {
+  if (password !== expectedPassword) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 

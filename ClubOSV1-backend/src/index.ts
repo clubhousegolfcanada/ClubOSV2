@@ -326,7 +326,7 @@ app.use('/api/system-status', require('./routes/system-status').default);
 app.use('/api/system-settings', require('./routes/systemSettings').default);
 app.use('/api/settings', bookingConfigRoutes);
 app.use('/api/logs', logsRoutes);
-app.use('/api/process-knowledge', processKnowledgeRoutes);
+app.use('/api/process-knowledge', authenticate, roleGuard(['admin']), processKnowledgeRoutes);
 
 // HubSpot webhook routes
 app.use('/api/webhooks/hubspot', hubspotBookingWebhook);

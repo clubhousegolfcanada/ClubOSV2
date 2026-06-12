@@ -7,10 +7,11 @@ const router = Router();
 // One-time database setup endpoint
 router.post('/setup-database', async (req: Request, res: Response) => {
   try {
-    // Simple security check - only allow with a secret key
+    // Security check - key comes from DB_SETUP_KEY env var; fails closed if unset
     const setupKey = req.headers['x-setup-key'];
-    
-    if (setupKey !== 'setup-clubos-db-2025') {
+    const expectedKey = process.env.DB_SETUP_KEY;
+
+    if (!expectedKey || setupKey !== expectedKey) {
       return res.status(401).json({
         success: false,
         message: 'Invalid setup key'
