@@ -62,13 +62,27 @@ router.get('/devices', authenticate, async (req: Request, res: Response) => {
       return res.status(403).json({ success: false, error: 'Insufficient permissions' });
     }
 
-    const result = await query(
-      `SELECT id, hostname, display_name, location, bay_number,
-              last_seen_at, last_restart_at, status, tps_version, exe_path, created_at,
-              CASE WHEN last_seen_at > NOW() - INTERVAL '2 minutes' THEN true ELSE false END as is_online
-       FROM trackman_devices
-       ORDER BY location, bay_number, display_name`
-    );
+    let result;
+    try {
+      result = await query(
+        `SELECT id, hostname, display_name, location, bay_number,
+                last_seen_at, last_restart_at, status, tps_version, exe_path, created_at,
+                radar_ip, radar_reachable,
+                CASE WHEN last_seen_at > NOW() - INTERVAL '2 minutes' THEN true ELSE false END as is_online
+         FROM trackman_devices
+         ORDER BY location, bay_number, display_name`
+      );
+    } catch (err: any) {
+      // 42703 = radar columns not migrated yet — serve the device list without them
+      if (err.code !== '42703') throw err;
+      result = await query(
+        `SELECT id, hostname, display_name, location, bay_number,
+                last_seen_at, last_restart_at, status, tps_version, exe_path, created_at,
+                CASE WHEN last_seen_at > NOW() - INTERVAL '2 minutes' THEN true ELSE false END as is_online
+         FROM trackman_devices
+         ORDER BY location, bay_number, display_name`
+      );
+    }
 
     const grouped: Record<string, any[]> = {};
     for (const device of result.rows) {
@@ -412,18 +426,39 @@ router.get('/poll', authenticateDevice as any, async (req: DeviceRequest, res: R
 router.post('/heartbeat', authenticateDevice as any, async (req: DeviceRequest, res: Response) => {
   try {
     const deviceId = req.device!.id;
-    const { tps_version, exe_path, tps_running } = req.body;
+    // radar_ip / radar_reachable are only sent by agent v1.2.0+. COALESCE keeps the
+    // last-known values when an older agent omits them (never clears on absence).
+    const { tps_version, exe_path, tps_running, radar_ip, radar_reachable } = req.body;
+    const statusValue = tps_running ? 'online' : 'idle';
 
-    await query(
-      `UPDATE trackman_devices
-       SET last_seen_at = NOW(),
-           status = $2,
-           tps_version = COALESCE($3, tps_version),
-           exe_path = COALESCE($4, exe_path),
-           updated_at = NOW()
-       WHERE id = $1`,
-      [deviceId, tps_running ? 'online' : 'idle', tps_version || null, exe_path || null]
-    );
+    try {
+      await query(
+        `UPDATE trackman_devices
+         SET last_seen_at = NOW(),
+             status = $2,
+             tps_version = COALESCE($3, tps_version),
+             exe_path = COALESCE($4, exe_path),
+             radar_ip = COALESCE($5, radar_ip),
+             radar_reachable = COALESCE($6, radar_reachable),
+             updated_at = NOW()
+         WHERE id = $1`,
+        [deviceId, statusValue, tps_version || null, exe_path || null,
+         radar_ip || null, radar_reachable === undefined ? null : radar_reachable]
+      );
+    } catch (err: any) {
+      // 42703 = radar columns not migrated yet — keep heartbeats alive with the legacy update
+      if (err.code !== '42703') throw err;
+      await query(
+        `UPDATE trackman_devices
+         SET last_seen_at = NOW(),
+             status = $2,
+             tps_version = COALESCE($3, tps_version),
+             exe_path = COALESCE($4, exe_path),
+             updated_at = NOW()
+         WHERE id = $1`,
+        [deviceId, statusValue, tps_version || null, exe_path || null]
+      );
+    }
 
     return res.json({ success: true });
   } catch (error: any) {

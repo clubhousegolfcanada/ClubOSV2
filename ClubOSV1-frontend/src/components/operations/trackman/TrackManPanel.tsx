@@ -13,6 +13,8 @@ interface Device {
   last_restart_at: string | null;
   status: string;
   tps_version: string | null;
+  radar_ip: string | null;
+  radar_reachable: boolean | null;
   is_online: boolean;
 }
 
@@ -411,6 +413,18 @@ export function TrackManPanel() {
                       {device.tps_version && (
                         <div className="flex justify-between">
                           <span>TPS Version</span><span>{device.tps_version}</span>
+                        </div>
+                      )}
+                      {device.radar_ip && (
+                        <div className="flex justify-between">
+                          <span>Radar</span>
+                          <span className="flex items-center gap-1.5">
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${device.radar_reachable ? 'bg-green-500' : 'bg-red-500'}`}
+                              title={device.radar_reachable ? 'Radar reachable' : 'Radar unreachable'}
+                            />
+                            <span className="text-[var(--text-primary)] font-mono">{device.radar_ip}</span>
+                          </span>
                         </div>
                       )}
                       <div className="flex justify-between">

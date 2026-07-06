@@ -3,7 +3,7 @@ import { http as api } from './http';
 // API client for PC/software remote actions
 
 export interface RemoteActionParams {
-  action: 'restart-trackman' | 'restart-browser' | 'reboot-pc' | 'restart-all' | 'restart-music' | 'restart-tv' | 'other' | 'projector-power' | 'projector-input' | 'projector-autosize';
+  action: 'restart-trackman' | 'restart-browser' | 'reboot-pc' | 'reboot-radar' | 'restart-all' | 'restart-music' | 'restart-tv' | 'other' | 'projector-power' | 'projector-input' | 'projector-autosize';
   location: string;
   bayNumber: string;
 }
@@ -56,6 +56,7 @@ export const actionDescriptions: Record<string, string> = {
   'restart-trackman': 'Restart TrackMan Software',
   'restart-browser': 'Restart Browser Display',
   'reboot-pc': 'Reboot PC (3-5 min downtime)',
+  'reboot-radar': 'Reboot Radar (~1 min downtime)',
   'restart-all': 'Restart All Software'
 };
 
@@ -63,6 +64,7 @@ export const actionWarnings: Record<string, string> = {
   'restart-trackman': 'This will close and restart TrackMan. Any active session will be interrupted.',
   'restart-browser': 'This will restart the browser with tournament display.',
   'reboot-pc': '⚠️ This will fully restart the PC. The bay will be unavailable for 3-5 minutes.',
+  'reboot-radar': '⚠️ This will power-cycle the radar. Anyone using it will be disconnected for about 1 minute.',
   'restart-all': 'This will restart both TrackMan and the browser. Any active session will be interrupted.'
 };
 

@@ -23,7 +23,8 @@ import {
   Unlock,
   DoorOpen,
   Monitor as MonitorIcon,
-  MonitorSmartphone
+  MonitorSmartphone,
+  Radar
 } from 'lucide-react';
 import { remoteActionsAPI, actionWarnings } from '@/api/remoteActions';
 import { doorAccessAPI } from '@/api/doorAccess';
@@ -812,7 +813,7 @@ export default function CommandsRedesigned() {
                                       <div className="flex items-center justify-between mb-1.5">
                                         <span className="text-xs font-medium text-[var(--text-primary)]">Box {trigger.bayNumber}</span>
                                       </div>
-                                      <div className="grid grid-cols-3 gap-1.5">
+                                      <div className="grid grid-cols-4 gap-1.5">
                                         <button
                                           onClick={() => handleExecuteReset(trigger)}
                                           className="flex flex-col items-center gap-0.5 p-1.5 bg-[var(--bg-secondary)] hover:bg-orange-500 border border-orange-500/50 hover:border-orange-500 rounded transition-all group/btn text-xs"
@@ -854,6 +855,32 @@ export default function CommandsRedesigned() {
                                         >
                                           <MonitorSmartphone className="w-3 h-3 text-[var(--text-muted)] group-hover/btn:text-white" />
                                           <span className="text-[10px] text-[var(--text-secondary)] group-hover/btn:text-white">Remote</span>
+                                        </button>
+                                        <button
+                                          onClick={async () => {
+                                            if (!confirm(`⚠️ Reboot the radar for ${trigger.location} Box ${trigger.bayNumber}? Anyone using this radar will be disconnected for about 1 minute. Continue?`)) {
+                                              return;
+                                            }
+                                            const toastId = toast.loading('Rebooting radar...');
+                                            try {
+                                              const result = await remoteActionsAPI.execute({
+                                                action: 'reboot-radar',
+                                                location: trigger.location!,
+                                                bayNumber: trigger.bayNumber || ''
+                                              });
+                                              toast.success(result.message || 'Radar reboot queued', { id: toastId });
+                                              if (result.jobId && !result.simulated) {
+                                                pollJobStatus(result.jobId, result.device);
+                                              }
+                                            } catch (error: any) {
+                                              toast.error(error.response?.data?.message || 'Failed to reboot radar', { id: toastId });
+                                            }
+                                          }}
+                                          className="flex flex-col items-center gap-0.5 p-1.5 bg-[var(--bg-secondary)] hover:bg-purple-500 border border-purple-500/50 hover:border-purple-500 rounded transition-all group/btn text-xs"
+                                          title={`Reboot radar for ${trigger.location} Box ${trigger.bayNumber}`}
+                                        >
+                                          <Radar className="w-3 h-3 text-[var(--text-muted)] group-hover/btn:text-white" />
+                                          <span className="text-[10px] text-[var(--text-secondary)] group-hover/btn:text-white">Radar</span>
                                         </button>
                                       </div>
                                     </div>

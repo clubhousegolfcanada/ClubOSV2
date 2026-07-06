@@ -17,6 +17,7 @@ const router = express.Router();
 const ACTION_TO_COMMAND_TYPE: Record<string, TrackmanCommandType> = {
   'restart-trackman':   'restart',
   'reboot-pc':          'reboot',
+  'reboot-radar':       'reboot_radar',
   'restart-browser':    'restart-browser',
   'restart-all':        'restart-all',
   'restart-music':      'restart-music',
@@ -40,6 +41,7 @@ const LOCATION_ACTIONS = new Set([
 const ACTION_LABELS: Record<string, string> = {
   'restart-trackman':   'TrackMan restart',
   'reboot-pc':          'PC reboot',
+  'reboot-radar':       'Radar reboot',
   'restart-browser':    'Browser restart',
   'restart-all':        'Full software restart',
   'restart-music':      'Music system restart',
@@ -53,6 +55,7 @@ const ACTION_LABELS: Record<string, string> = {
 const ESTIMATED_TIME: Record<string, string> = {
   'restart-trackman':   '30-60 seconds',
   'reboot-pc':          '2-3 minutes',
+  'reboot-radar':       '~1 minute',
   'restart-browser':    '10-30 seconds',
   'restart-all':        '60-90 seconds',
   'restart-music':      '10-30 seconds',

@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.35.7] - 2026-07-06
+
+### Added — Remote radar reboot (pairs with TrackMan agent v1.2.0)
+- **Migration `373_reboot_radar.sql`**: adds `radar_ip` + `radar_reachable` to `trackman_devices`. The agent self-discovers its radar's IP and reports it — ClubOS only displays and enqueues; no radar IPs are configured server-side. `command_type` needed no DDL (VARCHAR(20), no CHECK constraint).
+- **`routes/trackman-remote.ts` `/heartbeat`**: persists agent-reported `radar_ip`/`radar_reachable` via COALESCE — older (pre-v1.2.0) agents that omit the fields keep their last-known values. Both `/heartbeat` and `GET /devices` fall back to the legacy query on error 42703, so nothing breaks in the window between deploy and migration.
+- **`services/trackmanRestartService.ts`**: new `reboot_radar` command type (bay-targeted, 5-minute cooldown). Note the underscore — it must match the agent's shipped action string. `/poll` passes it through unchanged as `action: "reboot_radar"`; `/report` is untouched.
+- **`routes/remoteActions.ts`**: dashboard action `reboot-radar` → command type `reboot_radar` ("Radar reboot", est. ~1 minute, bay number required).
+- **`pages/commands.tsx`**: fourth per-bay button "Radar" (purple) with a destructive confirm — power-cycling the radar disconnects everyone using it for ~1 minute — plus the standard job-status polling.
+- **`components/operations/trackman/TrackManPanel.tsx`**: device cards now show the radar IP with a green/red reachability dot (only once the v1.2.0 agent has reported it).
+- **`docs/plans/REBOOT_RADAR_CLUBOS_PLAN.md`**: reconstructed spec from the TrackMan-Tools handoff, judgment calls, and the acceptance checklist. End-to-end validation (real radar reboot on an idle bay) is a bay-PC test owned by the TrackMan-Tools repo.
+- **ACTION REQUIRED**: run `railway run npm run db:migrate` after deploy. Until then the radar fields aren't stored (heartbeats still succeed via the fallback).
+
 ## [1.35.6] - 2026-07-06
 
 ### Security — Role guards on ClubAI admin endpoints

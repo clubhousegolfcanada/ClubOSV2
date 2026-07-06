@@ -38,7 +38,7 @@ export interface RestartStatus {
  * Recognized command types issued to the TrackMan agent .exe.
  * The agent polls every 30s for pending commands and dispatches based on this value.
  *
- * Bay-targeted:   restart, reboot, restart-browser, restart-all
+ * Bay-targeted:   restart, reboot, reboot_radar, restart-browser, restart-all
  * Location-wide:  restart-music, restart-tv, projector-power, projector-input, projector-autosize, other
  *
  * The agent implementation may no-op on types it doesn't yet handle; the queue
@@ -47,6 +47,7 @@ export interface RestartStatus {
 export type TrackmanCommandType =
   | 'restart'
   | 'reboot'
+  | 'reboot_radar' // underscore, not hyphen — must match the agent's shipped action string (v1.2.0+)
   | 'restart-browser'
   | 'restart-all'
   | 'restart-music'
@@ -74,9 +75,10 @@ const LOCATION_LEVEL_COMMANDS: ReadonlySet<TrackmanCommandType> = new Set([
 // only — a TrackMan restart does not block a PC reboot, and vice versa.
 // Lightweight commands (projector input change, etc.) are absent and skip the check.
 const COOLDOWN_MS: Partial<Record<TrackmanCommandType, number>> = {
-  'restart':     5 * 60 * 1000,   // TrackMan software restart
-  'reboot':      10 * 60 * 1000,  // Full PC reboot
-  'restart-all': 10 * 60 * 1000,  // TrackMan + browser
+  'restart':      5 * 60 * 1000,   // TrackMan software restart
+  'reboot':       10 * 60 * 1000,  // Full PC reboot
+  'restart-all':  10 * 60 * 1000,  // TrackMan + browser
+  'reboot_radar': 5 * 60 * 1000,   // Radar power-cycle (~1 min outage for everyone on it)
 };
 
 /**
