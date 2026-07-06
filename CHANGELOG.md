@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.35.9] - 2026-07-06
+
+### Added — ClubAI knows when to reset the radar vs. restart TPS
+- **`knowledge-base/clubai-system-prompt.md`**: new step 6 in the TrackMan intent — if a TrackMan restart already completed (or TPS is running fine) and balls are still not being picked up when hit, the problem is the radar: confirm, then use the `reboot_radar` tool if available, otherwise escalate Tier 2 with "needs radar reset". Also reminds to check for a clean white ball / clear hitting area first, and never to reset the same radar twice. NOTE: the live prompt may be the DB copy (`pattern_learning_config.clubai_system_prompt`) — if it was ever saved via the ClubAI admin UI, the new radar section must be added there too (or use "reset to default", which loads this file but discards custom edits).
+- **`services/clubaiService.ts`**: `reboot_radar` function tool registered alongside `restart_trackman`, gated by a new `clubai_radar_reboot_enabled` flag in `system_settings` — **default OFF** (enable after bay PCs run agent v1.2.0+). Tool-call passthrough generalized to both tools.
+- **`routes/openphone.ts`**: tool handler generalized to both actions with radar-specific copy (confirmation, "give it a minute then try a shot", cooldown, failure escalation). Also fixes the shadow-mode bypass for tool calls (audit Phase-2 item 5, shadow half): in shadow mode, tool calls are now logged and NOT executed — previously a shadow-mode restart still sent SMS and triggered hardware.
+- **`services/trackmanRestartService.ts`**: `isClubAIRadarRebootEnabled()` helper.
+
+### Added — Nightly radar reset schedule (Commands page)
+- **`jobs/radarReboot.ts`**: nightly cron that enqueues `reboot_radar` for every registered device, scheduled with an explicit `America/Halifax` timezone so the configured time is Atlantic local. Disabled by default; harmless pre-rollout (older agents no-op, commands expire in 10 min).
+- **`routes/trackman-remote.ts`**: `GET`/`PUT /radar-settings` (admin only) — `{ enabled, time: 'HH:MM' }` stored in `system_settings.trackman_radar_auto_reboot`; PUT hot-reloads the cron.
+- **`pages/commands.tsx`**: "Nightly Radar Reset" card on the Remote Actions tab (admins only) with enable toggle + time picker + save.
+
 ## [1.35.8] - 2026-07-06
 
 ### Fixed — Radar display verified against the authoritative TrackMan-Tools spec

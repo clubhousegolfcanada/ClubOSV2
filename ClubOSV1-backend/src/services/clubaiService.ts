@@ -4,7 +4,7 @@ import { getOpenAIClient } from '../utils/openaiClient';
 import { logger } from '../utils/logger';
 import { db } from '../utils/database';
 import { getRAGContext, logSearch, addManualKnowledge, searchKnowledge } from './clubaiKnowledgeService';
-import { isClubAIRestartEnabled, TRACKMAN_LOCATIONS } from './trackmanRestartService';
+import { isClubAIRestartEnabled, isClubAIRadarRebootEnabled, TRACKMAN_LOCATIONS } from './trackmanRestartService';
 
 interface ClubAIFunctionCall {
   name: string;
@@ -350,34 +350,54 @@ export async function generateResponse(
   messages.push({ role: 'user', content: messageText });
 
   try {
-    // Check if remote restart feature is enabled — if so, give GPT the restart tool
+    // Register remote-action tools per feature flag (system_settings):
+    // restart_trackman ← clubai_remote_restart_enabled, reboot_radar ← clubai_radar_reboot_enabled.
     const restartEnabled = await isClubAIRestartEnabled();
-    const tools = restartEnabled ? [{
-      type: 'function' as const,
-      function: {
-        name: 'restart_trackman',
-        description: 'Trigger a remote restart of a TrackMan simulator. Only call this AFTER the customer has confirmed they want a restart AND provided their location and box number. Do NOT call for PC reboot — only TrackMan software restart.',
-        parameters: {
-          type: 'object' as const,
-          properties: {
-            location: {
-              type: 'string' as const,
-              enum: TRACKMAN_LOCATIONS.map(l => l.name),
-              description: 'The location name'
-            },
-            bay_number: {
-              type: 'integer' as const,
-              description: 'The box/bay number (1-based)'
-            },
-            customer_confirmed: {
-              type: 'boolean' as const,
-              description: 'Whether the customer explicitly said yes/confirmed the restart'
-            }
-          },
-          required: ['location', 'bay_number', 'customer_confirmed']
+    const radarEnabled = await isClubAIRadarRebootEnabled();
+
+    // Both tools take the same location/bay/confirmation parameters.
+    const locationBayParams = {
+      type: 'object' as const,
+      properties: {
+        location: {
+          type: 'string' as const,
+          enum: TRACKMAN_LOCATIONS.map(l => l.name),
+          description: 'The location name'
+        },
+        bay_number: {
+          type: 'integer' as const,
+          description: 'The box/bay number (1-based)'
+        },
+        customer_confirmed: {
+          type: 'boolean' as const,
+          description: 'Whether the customer explicitly said yes/confirmed the action'
         }
-      }
-    }] : undefined;
+      },
+      required: ['location', 'bay_number', 'customer_confirmed']
+    };
+
+    const toolDefs: Array<{ type: 'function'; function: any }> = [];
+    if (restartEnabled) {
+      toolDefs.push({
+        type: 'function' as const,
+        function: {
+          name: 'restart_trackman',
+          description: 'Trigger a remote restart of a TrackMan simulator. Only call this AFTER the customer has confirmed they want a restart AND provided their location and box number. Do NOT call for PC reboot — only TrackMan software restart.',
+          parameters: locationBayParams
+        }
+      });
+    }
+    if (radarEnabled) {
+      toolDefs.push({
+        type: 'function' as const,
+        function: {
+          name: 'reboot_radar',
+          description: 'Reset (power-cycle) the TrackMan radar unit for a bay. Use ONLY when a TrackMan software restart already completed (or TPS is confirmed running fine) and balls are STILL not being picked up when hit. Takes about 1 minute and interrupts play on that bay. Only call AFTER the customer has confirmed AND provided their location and box number.',
+          parameters: locationBayParams
+        }
+      });
+    }
+    const tools = toolDefs.length > 0 ? toolDefs : undefined;
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -392,7 +412,7 @@ export async function generateResponse(
     // Check for function call (tool use)
     if (choice?.tool_calls && choice.tool_calls.length > 0) {
       const toolCall = choice.tool_calls[0];
-      if (toolCall.function?.name === 'restart_trackman') {
+      if (toolCall.function?.name === 'restart_trackman' || toolCall.function?.name === 'reboot_radar') {
         let args: Record<string, any>;
         try {
           args = JSON.parse(toolCall.function.arguments);
@@ -400,7 +420,7 @@ export async function generateResponse(
           args = {};
         }
 
-        logger.info('[ClubAI] GPT requested restart_trackman function call', { args, phoneNumber, conversationId });
+        logger.info(`[ClubAI] GPT requested ${toolCall.function.name} function call`, { args, phoneNumber, conversationId });
 
         const textResponse = choice.content?.trim() || null;
         return {
@@ -408,7 +428,7 @@ export async function generateResponse(
           escalate: false,
           confidence: 0.9,
           functionCall: {
-            name: 'restart_trackman',
+            name: toolCall.function.name,
             arguments: args
           }
         };

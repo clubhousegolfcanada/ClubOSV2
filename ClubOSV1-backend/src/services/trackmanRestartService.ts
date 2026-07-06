@@ -246,6 +246,27 @@ export async function checkRestartStatus(commandId: string): Promise<RestartStat
 }
 
 /**
+ * Check if the ClubAI radar reboot tool is enabled.
+ * Default OFF — enable only after bay PCs run agent v1.2.0+:
+ *   INSERT INTO system_settings (key, value) VALUES ('clubai_radar_reboot_enabled', '"true"'::jsonb)
+ *   ON CONFLICT (key) DO UPDATE SET value = '"true"'::jsonb;
+ */
+export async function isClubAIRadarRebootEnabled(): Promise<boolean> {
+  try {
+    const result = await query(
+      "SELECT value FROM system_settings WHERE key = 'clubai_radar_reboot_enabled'"
+    );
+    if (result.rows.length > 0) {
+      const val = result.rows[0].value;
+      return val === true || val === 'true';
+    }
+  } catch (error) {
+    logger.warn('Failed to check clubai_radar_reboot_enabled:', error);
+  }
+  return false;
+}
+
+/**
  * Check if the ClubAI remote restart feature is enabled.
  */
 export async function isClubAIRestartEnabled(): Promise<boolean> {

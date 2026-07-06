@@ -1163,43 +1163,56 @@ router.post('/webhook', async (req: Request, res: Response) => {
                     hasFunctionCall: !!clubaiResult.functionCall
                   });
 
-                  // Handle function calls (restart_trackman)
-                  if (clubaiResult.functionCall?.name === 'restart_trackman') {
+                  // Handle function calls (restart_trackman / reboot_radar)
+                  const toolName = clubaiResult.functionCall?.name;
+                  if (toolName === 'restart_trackman' || toolName === 'reboot_radar') {
                     const { triggerRestart, checkRestartStatus } = await import('../services/trackmanRestartService');
-                    const args = clubaiResult.functionCall.arguments;
+                    const args = clubaiResult.functionCall!.arguments;
+                    const isRadar = toolName === 'reboot_radar';
+
+                    // Shadow mode is log-only — never send SMS or trigger hardware from a tool call.
+                    if (clubaiShadow) {
+                      logger.info('[ClubAI SHADOW] Would execute tool call', { toolName, args, phoneNumber });
+                      return res.json({ success: true, message: `Shadow mode: ${toolName} not executed` });
+                    }
 
                     if (!args.customer_confirmed) {
-                      logger.info('[ClubAI] restart_trackman called without confirmation, sending confirmation prompt', { args });
+                      logger.info(`[ClubAI] ${toolName} called without confirmation, sending confirmation prompt`, { args });
                       // GPT made a tool call but customer hasn't confirmed yet.
                       // OpenAI returns content=null on tool calls, so clubaiResult.response is null.
                       // We must send the confirmation message ourselves.
                       const confirmMsg = clubaiResult.response
-                        || `Got it — ${args.location} Box ${args.bay_number}. Can we go ahead and reset for you? If you have a TrackMan account you can pick back up from "My Activities". - ClubAI`;
+                        || (isRadar
+                          ? `Sounds like the radar needs a reset — ${args.location} Box ${args.bay_number}. Takes about a minute and pauses play on that box. Want me to go ahead? - ClubAI`
+                          : `Got it — ${args.location} Box ${args.bay_number}. Can we go ahead and reset for you? If you have a TrackMan account you can pick back up from "My Activities". - ClubAI`);
                       await openPhoneService.sendMessage(phoneNumber, clubaiDefaultNumber!, confirmMsg);
                       await clubaiService.storeClubAIMessage(convId, confirmMsg, 0.85);
-                      return res.json({ success: true, message: 'ClubAI sent restart confirmation prompt' });
+                      return res.json({ success: true, message: `ClubAI sent ${toolName} confirmation prompt` });
                     } else {
                       const restartResult = await triggerRestart(
-                        args.location, args.bay_number, 'clubai'
+                        args.location, args.bay_number, 'clubai', null, isRadar ? 'reboot_radar' : 'restart'
                       );
 
                       if (restartResult.success) {
-                        const restartMsg = `Restarting now. Should be back up in about 2 minutes. If you have a TrackMan account you can pick back up from "My Activities". - ClubAI`;
+                        const restartMsg = isRadar
+                          ? `Resetting the radar now — give it about a minute, then try a shot. - ClubAI`
+                          : `Restarting now. Should be back up in about 2 minutes. If you have a TrackMan account you can pick back up from "My Activities". - ClubAI`;
                         await openPhoneService.sendMessage(phoneNumber, clubaiDefaultNumber!, restartMsg);
                         await clubaiService.storeClubAIMessage(convId, restartMsg, 0.95);
 
                         try {
                           await db.query(`
                             UPDATE openphone_conversations SET
-                              clubai_restart_state = 'restart_triggered',
+                              clubai_restart_state = $5,
                               clubai_restart_location = $2,
                               clubai_restart_bay = $3,
                               clubai_restart_command_id = $4
                             WHERE id = $1
-                          `, [convId, args.location, args.bay_number, restartResult.commandId]);
+                          `, [convId, args.location, args.bay_number, restartResult.commandId,
+                              isRadar ? 'radar_reboot_triggered' : 'restart_triggered']);
                         } catch { /* columns may not exist yet */ }
 
-                        logger.info('[ClubAI] TrackMan restart triggered via SMS', {
+                        logger.info(`[ClubAI] ${isRadar ? 'Radar reboot' : 'TrackMan restart'} triggered via SMS`, {
                           phoneNumber, location: args.location, bay: args.bay_number,
                           commandId: restartResult.commandId
                         });
@@ -1209,11 +1222,15 @@ router.post('/webhook', async (req: Request, res: Response) => {
                           try {
                             const status = await checkRestartStatus(restartResult.commandId!);
                             if (status.status === 'completed') {
-                              const followUp = `Should be back online now. Let me know if you need anything else! - ClubAI`;
+                              const followUp = isRadar
+                                ? `Radar should be back — hit a shot and let me know if it's tracking. - ClubAI`
+                                : `Should be back online now. Let me know if you need anything else! - ClubAI`;
                               await openPhoneService.sendMessage(phoneNumber, clubaiDefaultNumber!, followUp);
                               await clubaiService.storeClubAIMessage(convId, followUp, 0.9);
                             } else if (status.status === 'failed') {
-                              const failMsg = `The restart didn't go through. Let me connect you with the team. - ClubAI`;
+                              const failMsg = isRadar
+                                ? `The radar reset didn't go through. Let me connect you with the team. - ClubAI`
+                                : `The restart didn't go through. Let me connect you with the team. - ClubAI`;
                               await openPhoneService.sendMessage(phoneNumber, clubaiDefaultNumber!, failMsg);
                               await clubaiService.storeClubAIMessage(convId, failMsg, 0.9);
                               try {
@@ -1224,31 +1241,35 @@ router.post('/webhook', async (req: Request, res: Response) => {
                               await db.query(`UPDATE openphone_conversations SET clubai_restart_state = NULL WHERE id = $1`, [convId]);
                             } catch { /* ignore */ }
                           } catch (followUpErr) {
-                            logger.error('[ClubAI] Restart follow-up error:', followUpErr);
+                            logger.error('[ClubAI] Tool follow-up error:', followUpErr);
                           }
                         }, 120000);
 
-                        return res.json({ success: true, message: 'ClubAI triggered TrackMan restart' });
+                        return res.json({ success: true, message: `ClubAI triggered ${toolName}` });
                       } else {
-                        logger.warn('[ClubAI] restart_trackman failed:', restartResult.error);
+                        logger.warn(`[ClubAI] ${toolName} failed:`, restartResult.error);
 
-                        // If the failure is the restart cooldown, a restart was already triggered
+                        // If the failure is the cooldown, the action was already triggered
                         // recently — tell the customer to wait rather than falsely implying it failed.
                         const isCooldown = restartResult.reason === 'cooldown';
                         if (isCooldown) {
-                          const cooldownMsg = `The restart is already running — TrackMan can take 2-3 minutes to fully load. Give it a bit more time! - ClubAI`;
+                          const cooldownMsg = isRadar
+                            ? `The radar was just reset — it can take a couple of minutes to fully come back. Give it a moment and try another shot. - ClubAI`
+                            : `The restart is already running — TrackMan can take 2-3 minutes to fully load. Give it a bit more time! - ClubAI`;
                           await openPhoneService.sendMessage(phoneNumber, clubaiDefaultNumber!, cooldownMsg);
                           await clubaiService.storeClubAIMessage(convId, cooldownMsg, 0.85);
-                          return res.json({ success: true, message: 'ClubAI informed customer restart already in progress' });
+                          return res.json({ success: true, message: 'ClubAI informed customer action already in progress' });
                         }
 
-                        const fallbackMsg = `Couldn't trigger the remote restart right now. Let me connect you with the team — they'll sort it out. - ClubAI`;
+                        const fallbackMsg = isRadar
+                          ? `Couldn't reach the radar for a remote reset right now. Let me connect you with the team — they'll sort it out. - ClubAI`
+                          : `Couldn't trigger the remote restart right now. Let me connect you with the team — they'll sort it out. - ClubAI`;
                         await openPhoneService.sendMessage(phoneNumber, clubaiDefaultNumber!, fallbackMsg);
                         await clubaiService.storeClubAIMessage(convId, fallbackMsg, 0.7);
                         try {
                           await db.query(`UPDATE openphone_conversations SET clubai_escalated = true, conversation_locked = true WHERE id = $1`, [convId]);
                         } catch { /* ignore */ }
-                        return res.json({ success: true, message: 'ClubAI restart failed, escalated' });
+                        return res.json({ success: true, message: `ClubAI ${toolName} failed, escalated` });
                       }
                     }
                   }

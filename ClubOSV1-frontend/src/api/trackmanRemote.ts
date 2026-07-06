@@ -13,4 +13,7 @@ export const trackmanRemoteAPI = {
   getSettings: () => get('/trackman-remote/settings'),
   updateSettings: (data: { enabled: boolean; cron: string; notify_slack: boolean }) =>
     put('/trackman-remote/settings', data),
+  getRadarSettings: () => get('/trackman-remote/radar-settings'),
+  updateRadarSettings: (data: { enabled: boolean; time: string }) =>
+    put('/trackman-remote/radar-settings', data),
 };

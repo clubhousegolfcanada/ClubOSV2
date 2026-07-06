@@ -523,6 +523,18 @@ export default function CommandsRedesigned() {
   // Search removed for cleaner UI
   const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
   const [executingDoorAction, setExecutingDoorAction] = useState<Set<string>>(new Set());
+  const [radarSchedule, setRadarSchedule] = useState<{ enabled: boolean; time: string } | null>(null);
+  const [savingRadarSchedule, setSavingRadarSchedule] = useState(false);
+
+  // Nightly radar reset schedule — admin only (the endpoint is admin-gated)
+  useEffect(() => {
+    if (user?.role !== 'admin') return;
+    trackmanRemoteAPI.getRadarSettings()
+      .then((res: any) => {
+        if (res.data?.success && res.data.data) setRadarSchedule(res.data.data);
+      })
+      .catch(() => { /* backend not deployed yet or transient error — card stays hidden */ });
+  }, [user?.role]);
 
   // SECURITY: Check authentication and block customer role
   useEffect(() => {
@@ -930,6 +942,60 @@ export default function CommandsRedesigned() {
                     </button>
                   </div>
                 </div>
+
+                {/* Nightly Radar Reset schedule (admin only) */}
+                {user?.role === 'admin' && radarSchedule && (
+                  <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div>
+                        <h3 className="text-base font-medium text-[var(--text-primary)]">Nightly Radar Reset</h3>
+                        <p className="text-sm text-[var(--text-secondary)] font-light mt-1">
+                          Reboot every bay's radar once a night at the set time (Atlantic). Needs agent v1.2.0+ on the bay PCs.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <label className="flex items-center gap-2 text-sm text-[var(--text-primary)]">
+                          <input
+                            type="checkbox"
+                            checked={radarSchedule.enabled}
+                            onChange={(e) => setRadarSchedule({ ...radarSchedule, enabled: e.target.checked })}
+                            className="w-4 h-4 accent-[var(--accent)]"
+                          />
+                          Enabled
+                        </label>
+                        <input
+                          type="time"
+                          value={radarSchedule.time}
+                          onChange={(e) => setRadarSchedule({ ...radarSchedule, time: e.target.value })}
+                          className="px-2 py-1.5 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] text-sm text-[var(--text-primary)]"
+                        />
+                        <button
+                          onClick={async () => {
+                            setSavingRadarSchedule(true);
+                            try {
+                              const res: any = await trackmanRemoteAPI.updateRadarSettings(radarSchedule);
+                              if (res.data?.success) {
+                                toast.success(radarSchedule.enabled
+                                  ? `Nightly radar reset scheduled for ${radarSchedule.time}`
+                                  : 'Nightly radar reset disabled');
+                              } else {
+                                toast.error(res.data?.error || 'Failed to save schedule');
+                              }
+                            } catch (error: any) {
+                              toast.error(error.response?.data?.error || 'Failed to save schedule');
+                            } finally {
+                              setSavingRadarSchedule(false);
+                            }
+                          }}
+                          disabled={savingRadarSchedule}
+                          className="px-4 py-1.5 bg-[var(--accent)] hover:opacity-90 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-all"
+                        >
+                          {savingRadarSchedule ? 'Saving...' : 'Save'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 </div>
               </div>
             </>

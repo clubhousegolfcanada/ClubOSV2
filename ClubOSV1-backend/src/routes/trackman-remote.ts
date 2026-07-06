@@ -310,6 +310,69 @@ router.put('/settings', authenticate, async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * GET /radar-settings - Nightly radar reboot schedule
+ */
+router.get('/radar-settings', authenticate, async (req: Request, res: Response) => {
+  try {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, error: 'Admin only' });
+    }
+
+    const result = await query(
+      "SELECT value FROM system_settings WHERE key = 'trackman_radar_auto_reboot'"
+    );
+
+    const settings = result.rows.length > 0
+      ? result.rows[0].value
+      : { enabled: false, time: '04:00' };
+
+    return res.json({ success: true, data: settings });
+  } catch (error: any) {
+    logger.error('Error fetching radar reboot settings:', error);
+    return res.status(500).json({ success: false, error: 'Failed to fetch settings' });
+  }
+});
+
+/**
+ * PUT /radar-settings - Update nightly radar reboot schedule
+ * Body: { enabled: boolean, time: 'HH:MM' } — time is Atlantic (America/Halifax) local time.
+ */
+router.put('/radar-settings', authenticate, async (req: Request, res: Response) => {
+  try {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, error: 'Admin only' });
+    }
+
+    const { enabled, time } = req.body;
+    if (time !== undefined && !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
+      return res.status(400).json({ success: false, error: 'time must be HH:MM (24-hour)' });
+    }
+    const value = { enabled: !!enabled, time: time || '04:00' };
+
+    await query(
+      `INSERT INTO system_settings (key, value, description, updated_at)
+       VALUES ('trackman_radar_auto_reboot', $1, 'Nightly TrackMan radar reboot schedule (Atlantic time)', CURRENT_TIMESTAMP)
+       ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = CURRENT_TIMESTAMP`,
+      [JSON.stringify(value)]
+    );
+
+    // Reload the cron job so the new schedule takes effect immediately
+    try {
+      const { radarRebootJob } = await import('../jobs/radarReboot');
+      await radarRebootJob.reload();
+    } catch (reloadError) {
+      logger.error('Failed to reload radar reboot job after settings update:', reloadError);
+    }
+
+    logger.info(`Nightly radar reboot settings updated by ${req.user.email}: ${JSON.stringify(value)}`);
+    return res.json({ success: true, data: value, message: 'Settings saved and schedule updated.' });
+  } catch (error: any) {
+    logger.error('Error updating radar reboot settings:', error);
+    return res.status(500).json({ success: false, error: 'Failed to update settings' });
+  }
+});
+
 // ============================================
 // SELF-REGISTRATION (setup secret auth — used by PC installer exe)
 // ============================================

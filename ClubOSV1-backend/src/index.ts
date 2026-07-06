@@ -803,6 +803,11 @@ async function startServer() {
     trackmanRestartJob.start();
     logger.info('✅ TrackMan auto-restart job started');
 
+    // Start nightly radar reboot job (disabled unless configured on the Commands page)
+    const { radarRebootJob } = await import('./jobs/radarReboot');
+    radarRebootJob.start();
+    logger.info('✅ Radar reboot job started');
+
     // SOP module disabled - using OpenAI Assistants directly
     logger.info('✅ Using OpenAI Assistants for AI responses');
     
