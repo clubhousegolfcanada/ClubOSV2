@@ -415,16 +415,22 @@ export function TrackManPanel() {
                           <span>TPS Version</span><span>{device.tps_version}</span>
                         </div>
                       )}
-                      {device.radar_ip && (
+                      {/* Radar row renders once a v1.2.0+ agent has reported (either field set).
+                          Pre-migration /devices responses omit both fields → row hidden. */}
+                      {(device.radar_ip || (device.radar_reachable !== null && device.radar_reachable !== undefined)) && (
                         <div className="flex justify-between">
                           <span>Radar</span>
-                          <span className="flex items-center gap-1.5">
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${device.radar_reachable ? 'bg-green-500' : 'bg-red-500'}`}
-                              title={device.radar_reachable ? 'Radar reachable' : 'Radar unreachable'}
-                            />
-                            <span className="text-[var(--text-primary)] font-mono">{device.radar_ip}</span>
-                          </span>
+                          {device.radar_ip ? (
+                            <span className="flex items-center gap-1.5">
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${device.radar_reachable ? 'bg-green-500' : 'bg-red-500'}`}
+                                title={device.radar_reachable ? 'Radar reachable' : 'Radar unreachable'}
+                              />
+                              <span className="text-[var(--text-primary)] font-mono">{device.radar_ip}</span>
+                            </span>
+                          ) : (
+                            <span>Not detected</span>
+                          )}
                         </div>
                       )}
                       <div className="flex justify-between">

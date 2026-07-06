@@ -2,6 +2,11 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.35.8] - 2026-07-06
+
+### Fixed — Radar display verified against the authoritative TrackMan-Tools spec
+- The `trackman-tools` repo is now on GitHub, so v1.35.7 was verified line-by-line against the real handoff spec (`docs/clubosv2-reboot-radar-plan.md`). Everything matched except one §3e detail: **`TrackManPanel.tsx`** now shows "Not detected" when a v1.2.0 agent reports a null `radar_ip` (TPS off / scan inconclusive), instead of hiding the radar row — so an agent that can't find its radar is distinguishable from a pre-v1.2.0 agent. Pre-migration `/devices` responses (no radar fields) still hide the row.
+
 ## [1.35.7] - 2026-07-06
 
 ### Added — Remote radar reboot (pairs with TrackMan agent v1.2.0)

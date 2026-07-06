@@ -1,6 +1,6 @@
 # Reboot Radar — ClubOS side
 
-**Source:** Handoff from the TrackMan-Tools agent session (agent v1.2.0 ships radar support). The agent's plan file (`docs/clubosv2-reboot-radar-plan.md` in the TrackMan-Tools repo) was not reachable from this machine; this plan is reconstructed from the handoff summary, which pins the full API contract. Core instruction from the handoff: **`reboot_radar` is just another command exactly like restart/reboot — mirror those paths.**
+**Source:** Handoff from the TrackMan-Tools agent session (agent v1.2.0 ships radar support). Initially reconstructed from the handoff summary; **subsequently verified line-by-line against the authoritative spec** at `github.com/clubhousegolfcanada/trackman-tools` → `docs/clubosv2-reboot-radar-plan.md` once that repo was pushed. One deviation found and fixed (v1.35.8): device view now shows "Not detected" when a v1.2.0 agent reports a null `radar_ip`, instead of hiding the row. Core instruction from the handoff: **`reboot_radar` is just another command exactly like restart/reboot — mirror those paths.**
 
 ## Contract (from the shipped agent, per handoff)
 
