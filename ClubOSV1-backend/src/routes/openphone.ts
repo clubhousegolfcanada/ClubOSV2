@@ -1232,9 +1232,9 @@ router.post('/webhook', async (req: Request, res: Response) => {
                       } else {
                         logger.warn('[ClubAI] restart_trackman failed:', restartResult.error);
 
-                        // If the failure is the 10-min cooldown, the restart already happened —
-                        // tell the customer to wait rather than falsely implying it failed.
-                        const isCooldown = restartResult.error?.includes('minutes ago') || restartResult.error?.includes('restarted');
+                        // If the failure is the restart cooldown, a restart was already triggered
+                        // recently — tell the customer to wait rather than falsely implying it failed.
+                        const isCooldown = restartResult.reason === 'cooldown';
                         if (isCooldown) {
                           const cooldownMsg = `The restart is already running — TrackMan can take 2-3 minutes to fully load. Give it a bit more time! - ClubAI`;
                           await openPhoneService.sendMessage(phoneNumber, clubaiDefaultNumber!, cooldownMsg);

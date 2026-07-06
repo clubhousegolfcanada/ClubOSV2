@@ -28,6 +28,7 @@ import {
 import { remoteActionsAPI, actionWarnings } from '@/api/remoteActions';
 import { doorAccessAPI } from '@/api/doorAccess';
 import { unifiDoorsAPI } from '@/api/unifiDoors';
+import { trackmanRemoteAPI } from '@/api/trackmanRemote';
 import { openRemoteDesktopForBay } from '@/utils/remoteDesktopConfig';
 import OperatorLayout from '@/components/OperatorLayout';
 import SubNavigation, { SubNavTab } from '@/components/SubNavigation';
@@ -472,15 +473,6 @@ const commands: Command[] = [
     location: 'River Oaks',
     systemType: 'music'
   },
-  {
-    id: 'reset-all-trackman',
-    name: 'Reset All TrackMan Systems',
-    description: 'Remotely restart all TrackMan software across all boxes',
-    category: 'resets',
-    type: 'action',
-    keywords: ['reset', 'restart', 'trackman', 'all bays', 'all boxes'],
-    action: 'trackman-agent'
-  }
 ];
 
 // Category styling configuration
@@ -890,12 +882,18 @@ export default function CommandsRedesigned() {
                       </p>
                     </div>
                     <button
-                      onClick={() => {
-                        const resetAllTrigger = filteredTriggers.find(t => t.id === 'reset-all-trackman');
-                        if (resetAllTrigger) {
-                          if (confirm('Are you sure you want to reset ALL TrackMan systems? This will affect all bays.')) {
-                            handleExecuteReset(resetAllTrigger);
+                      onClick={async () => {
+                        if (!confirm('Are you sure you want to reset ALL TrackMan systems? This will affect all bays.')) return;
+                        const toastId = toast.loading('Resetting all TrackMan systems...');
+                        try {
+                          const res = await trackmanRemoteAPI.restartAll();
+                          if (res.data?.success) {
+                            toast.success(res.data.message || 'Restart command sent to all bays', { id: toastId });
+                          } else {
+                            toast.error(res.data?.error || 'Failed to reset all bays', { id: toastId });
                           }
+                        } catch (error: any) {
+                          toast.error(error.response?.data?.error || 'Failed to reset all TrackMan systems', { id: toastId });
                         }
                       }}
                       className="ml-4 px-6 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-all flex items-center gap-2"

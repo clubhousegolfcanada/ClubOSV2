@@ -2165,7 +2165,7 @@ router.post('/queue/:id/respond',
  * GET /api/patterns/clubai-stats
  * Get ClubAI conversation statistics for today
  */
-router.get('/clubai-stats', authenticate, async (_req: Request, res: Response) => {
+router.get('/clubai-stats', authenticate, roleGuard(['admin', 'operator']), async (_req: Request, res: Response) => {
   try {
     // Check if clubai columns exist before querying them
     const colCheck = await db.query(`
@@ -2236,7 +2236,7 @@ router.get('/clubai-stats', authenticate, async (_req: Request, res: Response) =
  * GET /api/patterns/clubai-knowledge
  * Get ClubAI system prompt and knowledge base content (read-only)
  */
-router.get('/clubai-knowledge', authenticate, async (_req: Request, res: Response) => {
+router.get('/clubai-knowledge', authenticate, roleGuard(['admin', 'operator']), async (_req: Request, res: Response) => {
   try {
     const { readFileSync } = require('fs');
     const { join } = require('path');
@@ -2267,7 +2267,7 @@ router.get('/clubai-knowledge', authenticate, async (_req: Request, res: Respons
  * GET /api/patterns/clubai-config
  * Get ClubAI configuration from pattern_learning_config, with env var fallbacks
  */
-router.get('/clubai-config', authenticate, async (_req: Request, res: Response) => {
+router.get('/clubai-config', authenticate, roleGuard(['admin', 'operator']), async (_req: Request, res: Response) => {
   // Env var defaults — always available even if DB fails
   const envEnabled = process.env.CLUBAI_ENABLED === 'true';
   const envShadow = process.env.CLUBAI_SHADOW_MODE === 'true';
@@ -2326,7 +2326,7 @@ router.get('/clubai-config', authenticate, async (_req: Request, res: Response) 
  * PUT /api/patterns/clubai-config
  * Update ClubAI configuration
  */
-router.put('/clubai-config', authenticate, async (req: Request, res: Response) => {
+router.put('/clubai-config', authenticate, roleGuard(['admin', 'operator']), async (req: Request, res: Response) => {
   try {
     const { user } = req as any;
     if (user.role !== 'admin') {
@@ -2366,7 +2366,7 @@ router.put('/clubai-config', authenticate, async (req: Request, res: Response) =
  * GET /api/patterns/clubai-system-prompt
  * Returns the current system prompt (from DB or default file)
  */
-router.get('/clubai-system-prompt', authenticate, async (_req: Request, res: Response) => {
+router.get('/clubai-system-prompt', authenticate, roleGuard(['admin', 'operator']), async (_req: Request, res: Response) => {
   try {
     // Check DB first
     const result = await db.query(
@@ -2401,7 +2401,7 @@ router.get('/clubai-system-prompt', authenticate, async (_req: Request, res: Res
  * PUT /api/patterns/clubai-system-prompt
  * Save the system prompt to DB. Admin only. Clears the in-memory cache.
  */
-router.put('/clubai-system-prompt', authenticate, async (req: Request, res: Response) => {
+router.put('/clubai-system-prompt', authenticate, roleGuard(['admin', 'operator']), async (req: Request, res: Response) => {
   try {
     const { user } = req as any;
     if (user.role !== 'admin') {
@@ -2436,7 +2436,7 @@ router.put('/clubai-system-prompt', authenticate, async (req: Request, res: Resp
  * POST /api/patterns/clubai-system-prompt/reset
  * Reset the system prompt to the default from the markdown file. Admin only.
  */
-router.post('/clubai-system-prompt/reset', authenticate, async (req: Request, res: Response) => {
+router.post('/clubai-system-prompt/reset', authenticate, roleGuard(['admin', 'operator']), async (req: Request, res: Response) => {
   try {
     const { user } = req as any;
     if (user.role !== 'admin') {
@@ -2466,7 +2466,7 @@ router.post('/clubai-system-prompt/reset', authenticate, async (req: Request, re
  * GET /api/patterns/clubai-knowledge-stats
  * Returns stats about the RAG knowledge base
  */
-router.get('/clubai-knowledge-stats', authenticate, async (_req: Request, res: Response) => {
+router.get('/clubai-knowledge-stats', authenticate, roleGuard(['admin', 'operator']), async (_req: Request, res: Response) => {
   try {
     const { getKnowledgeStats } = await import('../services/clubaiKnowledgeService');
     const stats = await getKnowledgeStats();
@@ -2485,7 +2485,7 @@ router.get('/clubai-knowledge-stats', authenticate, async (_req: Request, res: R
  * GET /api/patterns/clubai-knowledge-entries
  * Returns knowledge entries with optional filters
  */
-router.get('/clubai-knowledge-entries', authenticate, async (req: Request, res: Response) => {
+router.get('/clubai-knowledge-entries', authenticate, roleGuard(['admin', 'operator']), async (req: Request, res: Response) => {
   try {
     const { source_type, intent, limit = '50', offset = '0' } = req.query;
 
@@ -2543,7 +2543,7 @@ router.get('/clubai-knowledge-entries', authenticate, async (req: Request, res: 
  * POST /api/patterns/clubai-knowledge-search
  * Test a RAG search against the knowledge base
  */
-router.post('/clubai-knowledge-search', authenticate, async (req: Request, res: Response) => {
+router.post('/clubai-knowledge-search', authenticate, roleGuard(['admin', 'operator']), async (req: Request, res: Response) => {
   try {
     const { query: searchQuery } = req.body;
     if (!searchQuery) {
@@ -2565,7 +2565,7 @@ router.post('/clubai-knowledge-search', authenticate, async (req: Request, res: 
  * Accept raw text (policy, info, instructions) and use GPT-4o to parse it
  * into structured Q&A pairs for the knowledge base
  */
-router.post('/clubai-knowledge-parse', authenticate, async (req: Request, res: Response) => {
+router.post('/clubai-knowledge-parse', authenticate, roleGuard(['admin', 'operator']), async (req: Request, res: Response) => {
   try {
     const { rawText } = req.body;
     if (!rawText?.trim()) {
@@ -2632,7 +2632,7 @@ Extract as many distinct Q&A pairs as the text contains. If there are multiple f
  * POST /api/patterns/clubai-knowledge-manual
  * Add a manual knowledge entry
  */
-router.post('/clubai-knowledge-manual', authenticate, async (req: Request, res: Response) => {
+router.post('/clubai-knowledge-manual', authenticate, roleGuard(['admin', 'operator']), async (req: Request, res: Response) => {
   try {
     const { intent, customerQuestion, teamResponse } = req.body;
     if (!customerQuestion || !teamResponse) {
@@ -2657,7 +2657,7 @@ router.post('/clubai-knowledge-manual', authenticate, async (req: Request, res: 
  * GET /api/patterns/clubai-search-log
  * Get recent search logs to see what knowledge ClubAI used
  */
-router.get('/clubai-search-log', authenticate, async (req: Request, res: Response) => {
+router.get('/clubai-search-log', authenticate, roleGuard(['admin', 'operator']), async (req: Request, res: Response) => {
   try {
     const { limit = '20' } = req.query;
 
@@ -2684,7 +2684,7 @@ router.get('/clubai-search-log', authenticate, async (req: Request, res: Respons
  * GET /api/patterns/clubai-conversations
  * Returns recent ClubAI conversations with messages for the operator monitor
  */
-router.get('/clubai-conversations', authenticate, async (req: Request, res: Response) => {
+router.get('/clubai-conversations', authenticate, roleGuard(['admin', 'operator']), async (req: Request, res: Response) => {
   try {
     const { filter = 'all', limit = '20', offset = '0' } = req.query;
 
@@ -2759,7 +2759,7 @@ router.get('/clubai-conversations', authenticate, async (req: Request, res: Resp
  * routes factual corrections to knowledge base, style corrections to style rules,
  * and always logs to clubai_corrections for stats.
  */
-router.post('/clubai-correct', authenticate, async (req: Request, res: Response) => {
+router.post('/clubai-correct', authenticate, roleGuard(['admin', 'operator']), async (req: Request, res: Response) => {
   try {
     const userRole = (req as any).user?.role;
     if (!userRole || !['admin', 'operator'].includes(userRole)) {
@@ -2989,7 +2989,7 @@ Return ONLY the rule text, nothing else.`
  * POST /api/patterns/clubai-feedback
  * Submit thumbs up/down feedback on a ClubAI search log entry
  */
-router.post('/clubai-feedback', authenticate, async (req: Request, res: Response) => {
+router.post('/clubai-feedback', authenticate, roleGuard(['admin', 'operator']), async (req: Request, res: Response) => {
   try {
     const { searchLogId, quality } = req.body;
     if (!searchLogId || !['good', 'bad'].includes(quality)) {
@@ -3032,7 +3032,7 @@ router.post('/clubai-feedback', authenticate, async (req: Request, res: Response
  * GET /api/patterns/clubai-drafts
  * List pending draft responses for operator review
  */
-router.get('/clubai-drafts', authenticate, async (req: Request, res: Response) => {
+router.get('/clubai-drafts', authenticate, roleGuard(['admin', 'operator']), async (req: Request, res: Response) => {
   try {
     const { status = 'pending', limit = '20' } = req.query;
     const result = await db.query(`
@@ -3061,7 +3061,7 @@ router.get('/clubai-drafts', authenticate, async (req: Request, res: Response) =
  * POST /api/patterns/clubai-drafts/:id/approve
  * Approve a draft and send it to the customer
  */
-router.post('/clubai-drafts/:id/approve', authenticate, async (req: Request, res: Response) => {
+router.post('/clubai-drafts/:id/approve', authenticate, roleGuard(['admin', 'operator']), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const userId = (req as any).user?.id || null;
@@ -3117,7 +3117,7 @@ router.post('/clubai-drafts/:id/approve', authenticate, async (req: Request, res
  * POST /api/patterns/clubai-drafts/:id/edit
  * Edit a draft and send the edited version
  */
-router.post('/clubai-drafts/:id/edit', authenticate, async (req: Request, res: Response) => {
+router.post('/clubai-drafts/:id/edit', authenticate, roleGuard(['admin', 'operator']), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { editedResponse } = req.body;
@@ -3169,7 +3169,7 @@ router.post('/clubai-drafts/:id/edit', authenticate, async (req: Request, res: R
  * POST /api/patterns/clubai-drafts/:id/reject
  * Reject a draft (operator will handle manually)
  */
-router.post('/clubai-drafts/:id/reject', authenticate, async (req: Request, res: Response) => {
+router.post('/clubai-drafts/:id/reject', authenticate, roleGuard(['admin', 'operator']), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const userId = (req as any).user?.id || null;
@@ -3195,7 +3195,7 @@ router.post('/clubai-drafts/:id/reject', authenticate, async (req: Request, res:
  * GET /api/patterns/clubai-escalations
  * Returns conversations escalated by ClubAI that haven't been resolved by an operator yet
  */
-router.get('/clubai-escalations', authenticate, async (_req: Request, res: Response) => {
+router.get('/clubai-escalations', authenticate, roleGuard(['admin', 'operator']), async (_req: Request, res: Response) => {
   try {
     const result = await db.query(`
       SELECT
@@ -3253,7 +3253,7 @@ router.get('/clubai-escalations', authenticate, async (_req: Request, res: Respo
  * POST /api/patterns/clubai-escalations/:id/resolve
  * Mark an escalation as resolved
  */
-router.post('/clubai-escalations/:id/resolve', authenticate, async (req: Request, res: Response) => {
+router.post('/clubai-escalations/:id/resolve', authenticate, roleGuard(['admin', 'operator']), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await db.query(`
@@ -3276,7 +3276,7 @@ router.post('/clubai-escalations/:id/resolve', authenticate, async (req: Request
  * PUT /api/patterns/clubai-knowledge/:id
  * Edit an existing knowledge entry (updates text + regenerates embedding)
  */
-router.put('/clubai-knowledge/:id', authenticate, async (req: Request, res: Response) => {
+router.put('/clubai-knowledge/:id', authenticate, roleGuard(['admin', 'operator']), async (req: Request, res: Response) => {
   try {
     const userRole = (req as any).user?.role;
     if (!userRole || !['admin', 'operator'].includes(userRole)) {
@@ -3395,7 +3395,7 @@ router.patch('/clubai-knowledge/:id/toggle', authenticate, async (req: Request, 
  * GET /api/patterns/clubai-knowledge-conflicts
  * Find existing entries for a given intent to detect potential conflicts
  */
-router.get('/clubai-knowledge-conflicts', authenticate, async (req: Request, res: Response) => {
+router.get('/clubai-knowledge-conflicts', authenticate, roleGuard(['admin', 'operator']), async (req: Request, res: Response) => {
   try {
     const { intent, query: searchQuery } = req.query;
 
@@ -3459,7 +3459,7 @@ router.get('/clubai-knowledge-conflicts', authenticate, async (req: Request, res
  * DELETE /api/patterns/clubai-knowledge/:id
  * Permanently delete a knowledge entry (admin only)
  */
-router.delete('/clubai-knowledge/:id', authenticate, async (req: Request, res: Response) => {
+router.delete('/clubai-knowledge/:id', authenticate, roleGuard(['admin', 'operator']), async (req: Request, res: Response) => {
   try {
     const userRole = (req as any).user?.role;
     if (userRole !== 'admin') {

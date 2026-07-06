@@ -2,6 +2,21 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.35.6] - 2026-07-06
+
+### Security — Role guards on ClubAI admin endpoints
+- **`routes/enhanced-patterns.ts`**: all 25 `/api/patterns/clubai-*` routes now require `roleGuard(['admin', 'operator'])` in addition to `authenticate`. Previously any authenticated user — including customer, kiosk, and contractor accounts — could read customer SMS conversations, edit the ClubAI system prompt and config, and approve/send draft SMS responses. Matches the guard already used by the V3-PLS routes in the same file. No legitimate caller affected: the only frontend consumer is the operator-gated ClubAI admin UI (`OperationsClubAI.tsx`).
+
+### Fixed — "Reset All Bays" button on Commands page never worked
+- **`pages/commands.tsx`**: the button sent the `reset-all-trackman` trigger (which has no location/bay) to `POST /api/remote-actions/execute`, which requires both → always 400, plus a second garbled confirm dialog ("Reset undefined system at undefined?"). It now calls `POST /api/trackman-remote/restart { all: true }` via the existing `trackmanRemoteAPI.restartAll()` client (same path the TrackMan operations panel uses), with a single confirmation. Removed the dead `reset-all-trackman` trigger entry.
+
+### Fixed — ClubAI told customers a restart "didn't go through" during cooldown
+- **`services/trackmanRestartService.ts`**: `RestartResult` now carries a machine-readable `reason` field (`cooldown`, `invalid_location`, `invalid_bay`, `no_device`, `invalid_command`, `internal_error`), set on every failure path in `triggerRestart()` and `triggerLocationCommand()`.
+- **`routes/openphone.ts`**: ClubAI's cooldown detection now branches on `reason === 'cooldown'` instead of string-matching error text. The old match (`includes('minutes ago')`) silently broke in v1.35.4 when cooldown messages were reworded to "N min ago" — since then, a customer texting again within the 5-minute restart cooldown was told the restart failed and had their conversation escalated + locked, even though a restart was already in flight. They now get the intended "restart is already running, give it 2-3 minutes" reply.
+
+### Added
+- **`docs/plans/COMMANDS_CLUBAI_TPS_AUDIT_FIXES.md`**: fix plan from the July 2026 Commands/ClubAI/TPS audit. Phase 2 follow-ups (fail-closed `TRACKMAN_SETUP_SECRET`, shadow-mode gating for the restart tool, restart tool-call handling on the new-conversation webhook path, deploy-safe restart follow-up) and Phase 3 cleanup items. Door-access findings intentionally out of scope (doors run through the external Access Controller).
+
 ## [1.35.5] - 2026-06-12
 
 ### Security — Removed hardcoded secrets from source; affected endpoints now fail closed

@@ -10,11 +10,23 @@ export const TRACKMAN_LOCATIONS = [
   { name: 'River Oaks', bays: 2 },
 ];
 
+// Machine-readable failure cause. Consumers must branch on this, never on the
+// error text — ClubAI's cooldown detection previously string-matched `error`
+// and silently broke when the wording changed (v1.35.4).
+export type RestartFailureReason =
+  | 'invalid_location'
+  | 'invalid_bay'
+  | 'no_device'
+  | 'cooldown'
+  | 'invalid_command'
+  | 'internal_error';
+
 export interface RestartResult {
   success: boolean;
   commandId?: string;
   deviceName?: string;
   error?: string;
+  reason?: RestartFailureReason;
 }
 
 export interface RestartStatus {
@@ -82,10 +94,10 @@ export async function triggerRestart(
     // Validate location
     const validLocation = TRACKMAN_LOCATIONS.find(l => l.name === location);
     if (!validLocation) {
-      return { success: false, error: `Invalid location: ${location}` };
+      return { success: false, error: `Invalid location: ${location}`, reason: 'invalid_location' };
     }
     if (bayNumber < 1 || bayNumber > validLocation.bays) {
-      return { success: false, error: `Bay ${bayNumber} out of range for ${location} (1-${validLocation.bays})` };
+      return { success: false, error: `Bay ${bayNumber} out of range for ${location} (1-${validLocation.bays})`, reason: 'invalid_bay' };
     }
 
     // Find device
@@ -95,7 +107,7 @@ export async function triggerRestart(
     );
 
     if (deviceResult.rows.length === 0) {
-      return { success: false, error: `No device registered for ${location} Bay ${bayNumber}` };
+      return { success: false, error: `No device registered for ${location} Bay ${bayNumber}`, reason: 'no_device' };
     }
 
     const device = deviceResult.rows[0];
@@ -116,7 +128,7 @@ export async function triggerRestart(
         const timeSince = Date.now() - new Date(recent.rows[0].requested_at).getTime();
         const minutesAgo = Math.max(1, Math.floor(timeSince / 60000));
         const cooldownMin = Math.round(cooldownMs / 60000);
-        return { success: false, error: `Last ${commandType} was ${minutesAgo} min ago. Wait at least ${cooldownMin} minutes between ${commandType} commands.` };
+        return { success: false, error: `Last ${commandType} was ${minutesAgo} min ago. Wait at least ${cooldownMin} minutes between ${commandType} commands.`, reason: 'cooldown' };
       }
     }
 
@@ -138,7 +150,7 @@ export async function triggerRestart(
     };
   } catch (error: any) {
     logger.error('TrackMan restart trigger error:', error);
-    return { success: false, error: 'Internal error triggering restart' };
+    return { success: false, error: 'Internal error triggering restart', reason: 'internal_error' };
   }
 }
 
@@ -162,12 +174,12 @@ export async function triggerLocationCommand(
 ): Promise<RestartResult> {
   try {
     if (!LOCATION_LEVEL_COMMANDS.has(commandType)) {
-      return { success: false, error: `Command '${commandType}' is not a location-level command. Use triggerRestart() with a bay number.` };
+      return { success: false, error: `Command '${commandType}' is not a location-level command. Use triggerRestart() with a bay number.`, reason: 'invalid_command' };
     }
 
     const validLocation = TRACKMAN_LOCATIONS.find(l => l.name === location);
     if (!validLocation) {
-      return { success: false, error: `Invalid location: ${location}` };
+      return { success: false, error: `Invalid location: ${location}`, reason: 'invalid_location' };
     }
 
     // Pick first registered device at the location as the carrier for this command
@@ -180,7 +192,7 @@ export async function triggerLocationCommand(
     );
 
     if (deviceResult.rows.length === 0) {
-      return { success: false, error: `No TrackMan agent registered at ${location} to relay this command.` };
+      return { success: false, error: `No TrackMan agent registered at ${location} to relay this command.`, reason: 'no_device' };
     }
 
     const device = deviceResult.rows[0];
@@ -202,7 +214,7 @@ export async function triggerLocationCommand(
     };
   } catch (error: any) {
     logger.error('TrackMan location command error:', error);
-    return { success: false, error: 'Internal error triggering location command' };
+    return { success: false, error: 'Internal error triggering location command', reason: 'internal_error' };
   }
 }
 
