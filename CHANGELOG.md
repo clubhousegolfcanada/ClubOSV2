@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.35.10] - 2026-07-06
+
+### Added — Per-bay agent version detection; radar features safe to enable before agent rollout
+- **Why**: a v1.1.0 agent that receives an unknown action (like `reboot_radar`) reports success "OK" without doing anything (verified in the agent source) — an ungated radar command would be falsely marked completed and ClubAI would tell the customer the radar was reset when it wasn't. Radar capability is now detected per device WITHOUT attempting a reboot: only v1.2.0+ heartbeats carry radar fields, so `radar_reachable IS NULL` = old agent.
+- **`services/trackmanRestartService.ts`**: `triggerRestart` fails fast with new reason `agent_not_radar_capable` ("needs the v1.2.0+ agent update") when a `reboot_radar` targets a bay whose agent hasn't reported radar support. Applies to the Commands-page Radar button (clear toast) and ClubAI (clean escalation) alike.
+- **`jobs/radarReboot.ts`**: nightly run only enqueues for radar-capable devices and logs how many bays were skipped pending the agent update.
+- **`TrackManPanel.tsx`**: radar row now shows three states — IP + reachability dot (v1.2 agent, radar found), "Not detected" (v1.2 agent, no radar yet), or "Agent update needed" (pre-v1.2 agent) — so rollout progress is visible per bay.
+
+### Added — Self-migrating radar columns + UI toggle for the ClubAI radar tool
+- **`src/index.ts`**: startup now ensures `trackman_devices.radar_ip`/`radar_reachable` exist (idempotent `ADD COLUMN IF NOT EXISTS`, mirroring migration 373) — needed because prod migrations are manual and the local `.env` DB password is stale (rotated during the v1.35.5 secret scrub), so the deploy applies the schema itself.
+- **`routes/trackman-remote.ts`** + **`pages/commands.tsx`**: the Commands-page card is now "Radar Automation" with two toggles — "Nightly reset" (+ time) and "ClubAI SMS resets" (writes `clubai_radar_reboot_enabled` in `system_settings`) — so everything can be turned on from the UI with no SQL.
+
 ## [1.35.9] - 2026-07-06
 
 ### Added — ClubAI knows when to reset the radar vs. restart TPS

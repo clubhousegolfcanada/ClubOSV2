@@ -523,7 +523,7 @@ export default function CommandsRedesigned() {
   // Search removed for cleaner UI
   const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
   const [executingDoorAction, setExecutingDoorAction] = useState<Set<string>>(new Set());
-  const [radarSchedule, setRadarSchedule] = useState<{ enabled: boolean; time: string } | null>(null);
+  const [radarSchedule, setRadarSchedule] = useState<{ enabled: boolean; time: string; clubai_tool_enabled: boolean } | null>(null);
   const [savingRadarSchedule, setSavingRadarSchedule] = useState(false);
 
   // Nightly radar reset schedule — admin only (the endpoint is admin-gated)
@@ -948,9 +948,11 @@ export default function CommandsRedesigned() {
                   <div className="bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-xl p-6">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                       <div>
-                        <h3 className="text-base font-medium text-[var(--text-primary)]">Nightly Radar Reset</h3>
+                        <h3 className="text-base font-medium text-[var(--text-primary)]">Radar Automation</h3>
                         <p className="text-sm text-[var(--text-secondary)] font-light mt-1">
-                          Reboot every bay's radar once a night at the set time (Atlantic). Needs agent v1.2.0+ on the bay PCs.
+                          Nightly reset reboots every radar-capable bay at the set time (Atlantic). The ClubAI toggle
+                          lets the SMS assistant reset a radar when a TrackMan restart didn't fix ball tracking.
+                          Bays count as radar-capable once they run agent v1.2.0+ — older bays are skipped automatically.
                         </p>
                       </div>
                       <div className="flex items-center gap-3 flex-wrap">
@@ -961,7 +963,7 @@ export default function CommandsRedesigned() {
                             onChange={(e) => setRadarSchedule({ ...radarSchedule, enabled: e.target.checked })}
                             className="w-4 h-4 accent-[var(--accent)]"
                           />
-                          Enabled
+                          Nightly reset
                         </label>
                         <input
                           type="time"
@@ -969,6 +971,15 @@ export default function CommandsRedesigned() {
                           onChange={(e) => setRadarSchedule({ ...radarSchedule, time: e.target.value })}
                           className="px-2 py-1.5 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] text-sm text-[var(--text-primary)]"
                         />
+                        <label className="flex items-center gap-2 text-sm text-[var(--text-primary)]">
+                          <input
+                            type="checkbox"
+                            checked={!!radarSchedule.clubai_tool_enabled}
+                            onChange={(e) => setRadarSchedule({ ...radarSchedule, clubai_tool_enabled: e.target.checked })}
+                            className="w-4 h-4 accent-[var(--accent)]"
+                          />
+                          ClubAI SMS resets
+                        </label>
                         <button
                           onClick={async () => {
                             setSavingRadarSchedule(true);

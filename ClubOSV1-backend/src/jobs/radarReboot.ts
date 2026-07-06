@@ -70,16 +70,33 @@ class RadarRebootJob {
     this.isRunning = true;
 
     try {
-      logger.info('Nightly radar reboot: creating reboot_radar commands for all devices');
+      logger.info('Nightly radar reboot: creating reboot_radar commands for radar-capable devices');
 
-      const devices = await query('SELECT id, hostname FROM trackman_devices');
+      // Only devices whose agent has reported radar support (v1.2.0+ heartbeat).
+      // Older agents report success "OK" for unknown actions without doing anything,
+      // so sending them reboot_radar would create falsely-completed commands.
+      let devices;
+      try {
+        devices = await query('SELECT id, hostname, radar_reachable FROM trackman_devices');
+      } catch (err: any) {
+        if (err.code !== '42703') throw err;
+        logger.warn('Nightly radar reboot: radar columns not migrated yet, skipping run');
+        return;
+      }
       if (devices.rows.length === 0) {
         logger.info('Nightly radar reboot: no devices registered, skipping');
         return;
       }
 
+      const capable = devices.rows.filter((d: any) => d.radar_reachable !== null && d.radar_reachable !== undefined);
+      const skipped = devices.rows.length - capable.length;
+      if (capable.length === 0) {
+        logger.info(`Nightly radar reboot: no radar-capable agents yet (${skipped} device(s) need the v1.2.0+ agent), skipping`);
+        return;
+      }
+
       let created = 0;
-      for (const device of devices.rows) {
+      for (const device of capable) {
         await query(
           `INSERT INTO trackman_restart_commands (device_id, source, requested_by, command_type)
            VALUES ($1, 'cron', NULL, 'reboot_radar')`,
@@ -88,7 +105,7 @@ class RadarRebootJob {
         created++;
       }
 
-      logger.info(`Nightly radar reboot: ${created} reboot_radar commands created`);
+      logger.info(`Nightly radar reboot: ${created} reboot_radar commands created${skipped > 0 ? `, ${skipped} device(s) skipped (agent update needed)` : ''}`);
     } catch (error) {
       logger.error('Nightly radar reboot error:', error);
     } finally {

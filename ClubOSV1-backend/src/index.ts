@@ -633,6 +633,19 @@ async function startServer() {
       logger.warn('ClubAI table creation issue (may already exist with constraints):', error);
     }
 
+    // Ensure radar columns on trackman_devices (mirrors migration 373_reboot_radar.sql).
+    // Applied at startup too because prod migrations run manually — the radar rollout
+    // needs these columns live as soon as this build deploys.
+    try {
+      await db.query(`
+        ALTER TABLE trackman_devices ADD COLUMN IF NOT EXISTS radar_ip VARCHAR(45);
+        ALTER TABLE trackman_devices ADD COLUMN IF NOT EXISTS radar_reachable BOOLEAN;
+      `);
+      logger.info('TrackMan radar columns ensured');
+    } catch (error) {
+      logger.warn('TrackMan radar column ensure issue:', error);
+    }
+
     // Run ticket photo migration - critical for ticket creation
     try {
       logger.info('🔄 Running ticket photo migration...');

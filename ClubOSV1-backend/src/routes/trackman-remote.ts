@@ -320,14 +320,17 @@ router.get('/radar-settings', authenticate, async (req: Request, res: Response) 
     }
 
     const result = await query(
-      "SELECT value FROM system_settings WHERE key = 'trackman_radar_auto_reboot'"
+      "SELECT key, value FROM system_settings WHERE key IN ('trackman_radar_auto_reboot', 'clubai_radar_reboot_enabled')"
     );
 
-    const settings = result.rows.length > 0
-      ? result.rows[0].value
-      : { enabled: false, time: '04:00' };
+    let schedule: any = { enabled: false, time: '04:00' };
+    let clubaiToolEnabled = false;
+    for (const row of result.rows) {
+      if (row.key === 'trackman_radar_auto_reboot' && row.value) schedule = row.value;
+      if (row.key === 'clubai_radar_reboot_enabled') clubaiToolEnabled = row.value === true || row.value === 'true';
+    }
 
-    return res.json({ success: true, data: settings });
+    return res.json({ success: true, data: { ...schedule, clubai_tool_enabled: clubaiToolEnabled } });
   } catch (error: any) {
     logger.error('Error fetching radar reboot settings:', error);
     return res.status(500).json({ success: false, error: 'Failed to fetch settings' });
@@ -344,7 +347,7 @@ router.put('/radar-settings', authenticate, async (req: Request, res: Response) 
       return res.status(403).json({ success: false, error: 'Admin only' });
     }
 
-    const { enabled, time } = req.body;
+    const { enabled, time, clubai_tool_enabled } = req.body;
     if (time !== undefined && !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
       return res.status(400).json({ success: false, error: 'time must be HH:MM (24-hour)' });
     }
@@ -357,6 +360,16 @@ router.put('/radar-settings', authenticate, async (req: Request, res: Response) 
       [JSON.stringify(value)]
     );
 
+    // ClubAI reboot_radar tool flag lives on the same card in the UI
+    if (clubai_tool_enabled !== undefined) {
+      await query(
+        `INSERT INTO system_settings (key, value, description, updated_at)
+         VALUES ('clubai_radar_reboot_enabled', $1, 'ClubAI reboot_radar SMS tool', CURRENT_TIMESTAMP)
+         ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = CURRENT_TIMESTAMP`,
+        [JSON.stringify(!!clubai_tool_enabled)]
+      );
+    }
+
     // Reload the cron job so the new schedule takes effect immediately
     try {
       const { radarRebootJob } = await import('../jobs/radarReboot');
@@ -365,8 +378,12 @@ router.put('/radar-settings', authenticate, async (req: Request, res: Response) 
       logger.error('Failed to reload radar reboot job after settings update:', reloadError);
     }
 
-    logger.info(`Nightly radar reboot settings updated by ${req.user.email}: ${JSON.stringify(value)}`);
-    return res.json({ success: true, data: value, message: 'Settings saved and schedule updated.' });
+    logger.info(`Nightly radar reboot settings updated by ${req.user.email}: ${JSON.stringify(value)}, clubai_tool_enabled=${!!clubai_tool_enabled}`);
+    return res.json({
+      success: true,
+      data: { ...value, clubai_tool_enabled: !!clubai_tool_enabled },
+      message: 'Settings saved and schedule updated.'
+    });
   } catch (error: any) {
     logger.error('Error updating radar reboot settings:', error);
     return res.status(500).json({ success: false, error: 'Failed to update settings' });

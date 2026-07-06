@@ -19,6 +19,7 @@ export type RestartFailureReason =
   | 'no_device'
   | 'cooldown'
   | 'invalid_command'
+  | 'agent_not_radar_capable'
   | 'internal_error';
 
 export interface RestartResult {
@@ -102,17 +103,41 @@ export async function triggerRestart(
       return { success: false, error: `Bay ${bayNumber} out of range for ${location} (1-${validLocation.bays})`, reason: 'invalid_bay' };
     }
 
-    // Find device
-    const deviceResult = await query(
-      'SELECT id, display_name FROM trackman_devices WHERE location = $1 AND bay_number = $2',
-      [location, bayNumber]
-    );
+    // Find device. radar_reachable is included to gate radar commands by agent
+    // capability; the 42703 fallback covers the window before the radar columns exist.
+    let deviceResult;
+    try {
+      deviceResult = await query(
+        'SELECT id, display_name, radar_reachable FROM trackman_devices WHERE location = $1 AND bay_number = $2',
+        [location, bayNumber]
+      );
+    } catch (err: any) {
+      if (err.code !== '42703') throw err;
+      deviceResult = await query(
+        'SELECT id, display_name FROM trackman_devices WHERE location = $1 AND bay_number = $2',
+        [location, bayNumber]
+      );
+    }
 
     if (deviceResult.rows.length === 0) {
       return { success: false, error: `No device registered for ${location} Bay ${bayNumber}`, reason: 'no_device' };
     }
 
     const device = deviceResult.rows[0];
+
+    // reboot_radar requires agent v1.2.0+. Capability is detectable without ever
+    // attempting a reboot: only v1.2+ heartbeats report radar fields, so
+    // radar_reachable stays NULL for older agents. Critically, a v1.1.0 agent that
+    // receives an unknown action reports success "OK" without doing anything — an
+    // ungated radar command would be falsely marked completed. Fail fast instead.
+    if (commandType === 'reboot_radar' &&
+        (device.radar_reachable === null || device.radar_reachable === undefined)) {
+      return {
+        success: false,
+        error: `${location} Bay ${bayNumber} hasn't reported radar support yet — the bay PC needs the v1.2.0+ agent update.`,
+        reason: 'agent_not_radar_capable'
+      };
+    }
 
     // Safety: per-type cooldown. Only blocks a repeat of the same command type.
     const cooldownMs = COOLDOWN_MS[commandType];

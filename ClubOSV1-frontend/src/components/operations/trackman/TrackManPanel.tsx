@@ -415,9 +415,10 @@ export function TrackManPanel() {
                           <span>TPS Version</span><span>{device.tps_version}</span>
                         </div>
                       )}
-                      {/* Radar row renders once a v1.2.0+ agent has reported (either field set).
-                          Pre-migration /devices responses omit both fields → row hidden. */}
-                      {(device.radar_ip || (device.radar_reachable !== null && device.radar_reachable !== undefined)) && (
+                      {/* Radar row (hidden only pre-migration, when /devices omits the columns).
+                          radar_reachable === null means the agent has never reported radar
+                          fields → it's pre-v1.2.0 and needs the update. */}
+                      {device.radar_reachable !== undefined && (
                         <div className="flex justify-between">
                           <span>Radar</span>
                           {device.radar_ip ? (
@@ -428,6 +429,8 @@ export function TrackManPanel() {
                               />
                               <span className="text-[var(--text-primary)] font-mono">{device.radar_ip}</span>
                             </span>
+                          ) : device.radar_reachable === null ? (
+                            <span className="text-amber-500">Agent update needed</span>
                           ) : (
                             <span>Not detected</span>
                           )}
