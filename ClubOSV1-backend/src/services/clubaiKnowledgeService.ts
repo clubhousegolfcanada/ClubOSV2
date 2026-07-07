@@ -337,6 +337,14 @@ export async function addManualKnowledge(
   const embeddingText = `Customer: ${customerQuestion}\nResponse: ${teamResponse}`;
   const embedding = await generateEmbedding(embeddingText);
 
+  // A knowledge entry with no embedding is permanently invisible to RAG (the vector
+  // search can't match a null vector). Fail cleanly instead of inserting a dead row
+  // and reporting success — the caller checks the returned id.
+  if (!embedding) {
+    logger.warn('[ClubAI-Knowledge] Skipping manual knowledge insert — embedding generation failed (entry would be invisible to RAG)');
+    return null;
+  }
+
   try {
     const result = await db.query(`
       INSERT INTO clubai_knowledge

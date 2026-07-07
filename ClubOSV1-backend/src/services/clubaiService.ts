@@ -37,6 +37,7 @@ async function loadSystemPromptAsync(): Promise<void> {
   if (systemPromptLoaded && systemPrompt) return;
 
   // Try DB first
+  let dbErrored = false;
   try {
     const result = await db.query(
       `SELECT config_value FROM pattern_learning_config WHERE config_key = 'clubai_system_prompt'`
@@ -48,11 +49,17 @@ async function loadSystemPromptAsync(): Promise<void> {
       return;
     }
   } catch (err) {
-    logger.warn('[ClubAI] DB system prompt fetch failed, falling back to file:', err);
+    dbErrored = true;
+    logger.warn('[ClubAI] DB system prompt fetch failed, using file for this call:', err);
   }
 
-  // Fallback to markdown file
+  // Fallback to markdown file (loadSystemPromptFromFile sets systemPromptLoaded = true).
   loadSystemPromptFromFile();
+
+  // If the DB ERRORED (transient), do NOT pin the file — leave the cache unloaded so
+  // the next call retries the DB and picks up admin edits once it recovers. A genuinely
+  // empty DB (no configured prompt) legitimately keeps the file as the permanent fallback.
+  if (dbErrored) systemPromptLoaded = false;
 }
 
 function loadSystemPromptFromFile(): void {

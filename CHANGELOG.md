@@ -2,6 +2,16 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.35.18] - 2026-07-07
+
+### Fixed — Medium batch #2: ClubAI prompt cache + knowledge integrity
+
+- **A transient DB error permanently pinned the file-fallback system prompt (`services/clubaiService.ts`).** `loadSystemPromptFromFile` sets the cache as loaded, so after one DB hiccup ClubAI kept using the on-disk prompt and silently ignored admin edits until the next deploy. Now, on a DB *error* (vs a genuinely empty config), the file is used for that one call but the cache is left unloaded so the next call retries the DB and picks up admin edits once it recovers.
+- **Knowledge inserted with a NULL embedding was reported as success but invisible to RAG (`services/clubaiKnowledgeService.ts`).** `addManualKnowledge` inserted the row even when embedding generation failed, creating a dead entry the vector search can never match. It now fails cleanly (returns null) so the caller knows, instead of silently creating unusable knowledge.
+
+### Audit tail (deferred, tracked)
+- Remaining mediums with design/regression risk are intentionally held for a focused pass: escalation-queue auto-resolve signal (`enhanced-patterns` clubai-escalations), approve-and-send atomic claim (`messages.ts` — the deterministic bug was already fixed in v1.35.11), and the webhook dedup/persistence-ordering changes (`openphone.ts`), which must not reintroduce double-replies.
+
 ## [1.35.17] - 2026-07-07
 
 ### Fixed — Medium batch #1: ClubAI admin + messaging data integrity
