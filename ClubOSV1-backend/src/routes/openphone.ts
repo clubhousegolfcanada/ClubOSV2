@@ -749,7 +749,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
         const existingConv = await db.query(`
           SELECT id, messages, conversation_id, created_at, updated_at,
             operator_active, operator_last_message, conversation_locked, lockout_until,
-            rapid_message_count, ai_response_count,
+            rapid_message_count, ai_response_count, unread_count,
             last_operator_topic, topic_lockout_until, global_cooldown_until,
             CASE
               WHEN jsonb_array_length(messages) > 0
@@ -1176,15 +1176,38 @@ router.post('/webhook', async (req: Request, res: Response) => {
                       return res.json({ success: true, message: `Shadow mode: ${toolName} not executed` });
                     }
 
+                    // Approval mode: never auto-execute hardware. A tool call is an action, not a
+                    // draftable text response, so defer to a human operator (lock + flag) instead.
+                    if (clubaiApprovalMode) {
+                      logger.info('[ClubAI APPROVAL] Tool call deferred to operator', { toolName, args, phoneNumber });
+                      try {
+                        await db.query(`
+                          UPDATE openphone_conversations SET
+                            clubai_escalated = true,
+                            clubai_escalation_reason = $2,
+                            conversation_locked = true,
+                            customer_sentiment = 'needs_attention'
+                          WHERE id = $1
+                        `, [convId, `Approval mode: ClubAI wanted to ${toolName} (${args.location || '?'} Box ${args.bay_number ?? '?'})`]);
+                      } catch {
+                        await db.query(`UPDATE openphone_conversations SET conversation_locked = true WHERE id = $1`, [convId]).catch(() => {});
+                      }
+                      return res.json({ success: true, message: `Approval mode: ${toolName} deferred to operator` });
+                    }
+
                     if (!args.customer_confirmed) {
                       logger.info(`[ClubAI] ${toolName} called without confirmation, sending confirmation prompt`, { args });
                       // GPT made a tool call but customer hasn't confirmed yet.
                       // OpenAI returns content=null on tool calls, so clubaiResult.response is null.
                       // We must send the confirmation message ourselves.
-                      const confirmMsg = clubaiResult.response
+                      let confirmMsg = clubaiResult.response
                         || (isRadar
                           ? `Sounds like the radar needs a reset — ${args.location} Box ${args.bay_number}. Takes about a minute and pauses play on that box. Want me to go ahead? - ClubAI`
                           : `Got it — ${args.location} Box ${args.bay_number}. Can we go ahead and reset for you? If you have a TrackMan account you can pick back up from "My Activities". - ClubAI`);
+                      // Always sign. An unsigned outbound is treated as OPERATOR activity by the
+                      // outbound webhook (operator-lockout), which would disable ClubAI and orphan
+                      // this very confirmation flow when the customer replies "yes".
+                      if (!/-\s*ClubAI\s*$/i.test(confirmMsg)) confirmMsg = confirmMsg.trim() + ' - ClubAI';
                       await openPhoneService.sendMessage(phoneNumber, clubaiDefaultNumber!, confirmMsg);
                       await clubaiService.storeClubAIMessage(convId, confirmMsg, 0.85);
                       return res.json({ success: true, message: `ClubAI sent ${toolName} confirmation prompt` });

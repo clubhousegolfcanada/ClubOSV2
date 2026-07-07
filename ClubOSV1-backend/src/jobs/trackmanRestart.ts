@@ -32,11 +32,13 @@ class TrackmanRestartJob {
       return;
     }
 
+    // Pin to Atlantic time — Railway runs UTC, so an unqualified "0 3 * * *" would fire
+    // at 3am UTC = ~11pm–midnight Atlantic, restarting every bay mid-round. Matches radarReboot.ts.
     this.task = cron.schedule(cronExpr, async () => {
       await this.execute();
-    });
+    }, { timezone: 'America/Halifax' });
 
-    logger.info(`TrackMan restart scheduled: ${cronExpr}`);
+    logger.info(`TrackMan restart scheduled: ${cronExpr} (America/Halifax)`);
   }
 
   async reload() {

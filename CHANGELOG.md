@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.35.12] - 2026-07-07
+
+### Fixed — High-severity audit findings (ClubAI, Messages, TrackMan)
+
+- **H14 — Nightly TrackMan restart fired during peak evening play (`jobs/trackmanRestart.ts`).** `cron.schedule` had no timezone, so the enabled-by-default `0 3 * * *` ran at 3am **UTC ≈ 11pm–midnight Atlantic**, restarting every bay mid-round nightly. Pinned to `America/Halifax` (matches `radarReboot.ts`).
+- **H10 — Unread counts were systematically wrong (`routes/openphone.ts`).** The webhook's `existingConv` SELECT never fetched `unread_count`, so it never accumulated (3 unread texts showed 1) and **any outbound — including ClubAI's own auto-reply — reset it to 0**, hiding overnight conversations. Added `unread_count` to the SELECT.
+- **H1 — Approval mode was bypassed for tool calls (`routes/openphone.ts`).** The `restart_trackman`/`reboot_radar` block checked only shadow mode, so in approval mode a confirmed restart executed hardware and texted the customer autonomously. Tool calls now defer to a human (lock + escalate) in approval mode.
+- **H2 — Tool confirmation SMS could be sent unsigned (`routes/openphone.ts`).** When GPT emitted text alongside the tool call it was sent without ` - ClubAI`; the outbound webhook then treated it as operator activity and locked ClubAI out of its own confirmation flow. Confirmation messages are now always signed.
+- **H4 — OpenAI failure produced total customer silence (`services/clubaiService.ts`).** A timeout/429/5xx returned `escalate:false`, so the customer got nothing and no operator was flagged. Now escalates (locks the conversation + flags for a human); no bad SMS is sent since the escalate branch only texts when a response is present.
+- **H11 — Open message thread never live-updated (`pages/messages.tsx`).** SSE/poll refreshed only the sidebar list; on mobile (list hidden) an operator viewing a thread never saw the customer's reply. Added a phone-guarded `refreshOpenThread` that re-fetches the open thread on `new_message` and the 30s fallback poll (the phone guard also mitigates the H12 switch race).
+
 ## [1.35.11] - 2026-07-06
 
 ### Fixed — Three critical production bugs from the core-functions audit (ClubAI, Messages)

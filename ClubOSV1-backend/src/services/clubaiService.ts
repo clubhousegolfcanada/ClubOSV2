@@ -597,7 +597,16 @@ export async function generateResponse(
 
   } catch (error) {
     logger.error('[ClubAI] GPT-4o call failed:', error);
-    return { response: null, escalate: false, confidence: 0 };
+    // Escalate instead of going silent — at an unstaffed facility a dropped customer
+    // with no operator flag is worse than a locked conversation a human can pick up.
+    // The webhook's escalate branch only texts the customer if `response` is set, so
+    // null response = no bad SMS, just lock + operator notification.
+    return {
+      response: null,
+      escalate: true,
+      escalationSummary: 'ClubAI could not reach the AI service (OpenAI error/timeout) — needs human follow-up.',
+      confidence: 0
+    };
   }
 }
 

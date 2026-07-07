@@ -185,8 +185,10 @@ export default function Messages() {
   const selectedConversationRef = useRef<Conversation | null>(null);
   const conversationsRef = useRef<Conversation[]>([]);
   const loadConversationsRef = useRef<(showRefreshIndicator?: boolean) => Promise<void>>();
+  const refreshOpenThreadRef = useRef<() => Promise<void>>();
   const abortControllerRef = useRef<AbortController | null>(null);
   const historyAbortRef = useRef<AbortController | null>(null);
+  const threadRefreshAbortRef = useRef<AbortController | null>(null);
   // Cache: phone -> { messages, updatedAt, fetchedAt } to skip re-fetching unchanged conversations
   const historyCache = useRef<Map<string, { messages: Message[]; meta: any; updatedAt: string; fetchedAt: number }>>(new Map());
 
@@ -363,6 +365,10 @@ export default function Messages() {
         if (isTabVisible && isMounted && loadConversationsRef.current) {
           loadConversationsRef.current(false);
         }
+        // Also refresh the open thread so an operator viewing it sees the new reply.
+        if (isTabVisible && isMounted && refreshOpenThreadRef.current) {
+          refreshOpenThreadRef.current();
+        }
       });
 
       eventSource.addEventListener('conversation_update', () => {
@@ -412,6 +418,10 @@ export default function Messages() {
       interval = setInterval(() => {
         if (isTabVisible && isMounted && loadConversationsRef.current) {
           loadConversationsRef.current(false);
+        }
+        // Safety net for when SSE is down: also refresh the open thread.
+        if (isTabVisible && isMounted && refreshOpenThreadRef.current) {
+          refreshOpenThreadRef.current();
         }
       }, FALLBACK_POLL_INTERVAL);
 
@@ -672,6 +682,49 @@ export default function Messages() {
   useEffect(() => {
     loadConversationsRef.current = loadConversations;
   }, [loadConversations]);
+
+  // Refresh the CURRENTLY-OPEN thread's messages (not just the sidebar list).
+  // Without this, SSE/poll only updated the conversation list, so an operator
+  // staring at an open thread — especially on mobile, where the list is hidden —
+  // never saw the customer's new reply. Phone-guarded on apply so a response that
+  // lands after the operator has switched conversations can't overwrite the new thread.
+  const refreshOpenThread = useCallback(async () => {
+    const current = selectedConversationRef.current;
+    if (!current?.phone_number) return;
+    const phone = current.phone_number;
+    const token = tokenManager.getToken();
+    if (!token) return;
+    try {
+      threadRefreshAbortRef.current?.abort();
+      threadRefreshAbortRef.current = new AbortController();
+      const resp = await http.get(
+        `messages/conversations/${phone}/full-history`,
+        { signal: threadRefreshAbortRef.current.signal }
+      );
+      if (!resp.data?.success) return;
+      // Only apply if this conversation is still the open one.
+      if (selectedConversationRef.current?.phone_number !== phone) return;
+
+      const fetchedMessages: Message[] = resp.data.data.messages;
+      const hasMore = resp.data.data.hasMore;
+      // Drop the stale cache entry so a later re-open re-fetches fresh.
+      historyCache.current.delete(phone);
+
+      const INITIAL_MESSAGE_COUNT = 30;
+      const recentMessages = fetchedMessages.length > INITIAL_MESSAGE_COUNT
+        ? fetchedMessages.slice(-INITIAL_MESSAGE_COUNT)
+        : fetchedMessages;
+      setMessages(recentMessages);
+      setFullMessageHistory(fetchedMessages);
+      setHasMoreMessages(fetchedMessages.length > INITIAL_MESSAGE_COUNT || hasMore);
+    } catch {
+      // Aborted or network error — the sidebar poll still runs; ignore.
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshOpenThreadRef.current = refreshOpenThread;
+  }, [refreshOpenThread]);
 
   const selectConversation = useCallback(async (conversation: Conversation) => {
     // Check if switching to a different conversation
