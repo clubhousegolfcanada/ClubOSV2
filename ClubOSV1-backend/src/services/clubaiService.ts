@@ -442,11 +442,17 @@ export async function generateResponse(
       return { response: null, escalate: false, confidence: 0 };
     }
 
-    // Check for escalation signal
-    const escalationMatch = rawResponse.match(/\[ESCALATE TO HUMAN\]\s*(.*)/s);
+    // Check for escalation signal. Tolerant of case, internal whitespace, an
+    // optional "a" ("escalate to a human"), and surrounding markdown emphasis —
+    // GPT occasionally varies the tag, and an exact match would BOTH leak the raw
+    // tag into the customer SMS and silently drop the escalation. Brackets are
+    // still required so a conversational "escalate to a human" isn't a false hit.
+    const escalationTag = /\*{0,2}\[\s*escalate\s+to\s+(?:a\s+)?human\s*\]\*{0,2}/i;
+    const escalationMatch = rawResponse.match(escalationTag);
     if (escalationMatch) {
-      const customerMessage = rawResponse.replace(/\[ESCALATE TO HUMAN\][\s\S]*$/, '').trim();
-      const escalationSummary = escalationMatch[1]?.trim() || 'AI requested escalation';
+      const tagIndex = escalationMatch.index ?? 0;
+      const customerMessage = rawResponse.slice(0, tagIndex).trim();
+      const escalationSummary = rawResponse.slice(tagIndex + escalationMatch[0].length).trim() || 'AI requested escalation';
 
       // Log the search context for this escalation
       logSearch(conversationId, messageText, ragContext.knowledgeIds, ragContext.similarityScores, customerMessage || '[escalated]').catch(err => logger.warn('[ClubAI] Non-critical operation failed:', err));

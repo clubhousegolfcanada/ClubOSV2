@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.35.14] - 2026-07-07
+
+### Fixed — Security hardening + ClubAI escalation robustness (audit H5, H8, H13)
+
+- **H8 — Knowledge-store read/tamper endpoints were reachable by any authenticated role (`routes/knowledge-store.ts`).** `/test` (which writes), `/get/:key`, `/search`, `/keys`, and `/confidence` had `authenticate` but no `roleGuard`, so any of the ~5,000 customers could enumerate and read internal SOPs and POST confidence changes with their portal JWT. Added `roleGuard(['admin','operator'])` to all five (no internal/frontend callers use these HTTP routes — internal use is via direct module import).
+- **H13 — Operator JWTs were leaking into production logs (`middleware/requestLogger.ts`).** The messages page passes the JWT as `?token=` for SSE (EventSource can't set an Authorization header), and the global request logger recorded `req.query` on every request — writing every operator's bearer token into Railway logs. Sensitive query params (`token`, `access_token`, `secret`, etc.) are now redacted before logging.
+- **H5 — `[ESCALATE TO HUMAN]` detection was a case-sensitive exact match (`services/clubaiService.ts`).** A variant tag (`[Escalate to human]`, `**[ESCALATE TO HUMAN]**`, `[ESCALATE TO A HUMAN]`) both leaked the raw tag into the customer SMS and silently dropped the escalation. Detection is now case-insensitive and tolerant of whitespace, an optional "a", and surrounding markdown — brackets still required so a conversational "escalate to a human" isn't a false positive.
+
+### Verified
+- **H6** (draft approval atomic claim) confirmed already closed by the v1.35.11 C2 rewrite (`UPDATE … WHERE status='pending' RETURNING *`).
+
 ## [1.35.13] - 2026-07-07
 
 ### Fixed — TrackMan restart-flow durability + security (audit H3, H15, H16)

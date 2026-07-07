@@ -26,7 +26,7 @@ router.use(authenticate);
  * GET /api/knowledge-store/test
  * Test endpoint to verify the service is working
  */
-router.get('/test', async (req, res) => {
+router.get('/test', roleGuard(['admin', 'operator']), async (req, res) => {
   try {
     const testKey = 'test.connection';
     await knowledgeStore.set(testKey, { 
@@ -96,6 +96,7 @@ router.post('/set',
  * Retrieve knowledge by key
  */
 router.get('/get/:key',
+  roleGuard(['admin', 'operator']),
   param('key').isString().notEmpty(),
   handleValidationErrors,
   async (req, res) => {
@@ -131,6 +132,7 @@ router.get('/get/:key',
  * Search across all knowledge
  */
 router.get('/search',
+  roleGuard(['admin', 'operator']),
   [
     queryValidator('q').isString().notEmpty().withMessage('Search query is required'),
     queryValidator('limit').optional().isInt({ min: 1, max: 100 }),
@@ -195,6 +197,7 @@ router.delete('/:key',
  * List all keys (with optional prefix)
  */
 router.get('/keys',
+  roleGuard(['admin', 'operator']),
   async (req, res) => {
     try {
       const keys = await knowledgeStore.keys(req.query.prefix as string);
@@ -330,6 +333,7 @@ router.post('/upload',
  * Update confidence based on feedback
  */
 router.post('/confidence',
+  roleGuard(['admin', 'operator']),
   [
     body('key').isString().notEmpty().withMessage('Key is required'),
     body('success').isBoolean().withMessage('Success flag is required')

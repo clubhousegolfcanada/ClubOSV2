@@ -2,6 +2,24 @@ import { Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger';
 import { db } from '../utils/database';
 
+// Query params that must never reach the logs. The messages page passes the JWT
+// as ?token= for SSE (EventSource can't set an Authorization header), and this
+// logger records req.query on every request — so an un-redacted log leaks every
+// operator's bearer token into Railway's log stream.
+const SENSITIVE_QUERY_KEYS = new Set([
+  'token', 'access_token', 'refresh_token', 'api_key', 'apikey',
+  'secret', 'password', 'auth', 'jwt', 'sig', 'signature'
+]);
+
+function redactQuery(query: Request['query']): Record<string, unknown> {
+  if (!query || typeof query !== 'object') return {};
+  const out: Record<string, unknown> = {};
+  for (const k of Object.keys(query)) {
+    out[k] = SENSITIVE_QUERY_KEYS.has(k.toLowerCase()) ? '[REDACTED]' : (query as any)[k];
+  }
+  return out;
+}
+
 export const requestLogger = (req: Request, res: Response, next: NextFunction) => {
   const start = Date.now();
   const originalSend = res.send;
@@ -29,7 +47,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction) =
     logger.info(`${req.method} ${req.path} ${res.statusCode} ${duration}ms`, {
       method: req.method,
       path: req.path,
-      query: req.query,
+      query: redactQuery(req.query),
       statusCode: res.statusCode,
       duration,
       userId: user?.id,
