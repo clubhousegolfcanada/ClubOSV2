@@ -646,6 +646,30 @@ async function startServer() {
       logger.warn('TrackMan radar column ensure issue:', error);
     }
 
+    // Fix clubai_draft_responses.reviewed_by type (mirrors migration 374).
+    // Applied at startup too because prod migrations run manually. The column was
+    // INTEGER while users.id is UUID, so every approve/edit/reject threw AFTER the
+    // SMS was sent — retries double-texted customers. Only ever held NULL, so safe.
+    try {
+      await db.query(`
+        DO $$
+        BEGIN
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'clubai_draft_responses'
+              AND column_name = 'reviewed_by'
+              AND data_type = 'integer'
+          ) THEN
+            ALTER TABLE clubai_draft_responses
+              ALTER COLUMN reviewed_by TYPE UUID USING reviewed_by::text::uuid;
+          END IF;
+        END $$;
+      `);
+      logger.info('ClubAI draft reviewed_by column ensured (UUID)');
+    } catch (error) {
+      logger.warn('ClubAI draft reviewed_by column ensure issue:', error);
+    }
+
     // Run ticket photo migration - critical for ticket creation
     try {
       logger.info('🔄 Running ticket photo migration...');

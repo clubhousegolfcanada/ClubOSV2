@@ -3066,45 +3066,56 @@ router.post('/clubai-drafts/:id/approve', authenticate, roleGuard(['admin', 'ope
     const { id } = req.params;
     const userId = (req as any).user?.id || null;
 
-    // Get the draft
-    const draftResult = await db.query(`
-      SELECT * FROM clubai_draft_responses WHERE id = $1 AND status = 'pending'
-    `, [id]);
-
-    if (draftResult.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Draft not found or already reviewed' });
-    }
-
-    const draft = draftResult.rows[0];
-
-    // Send the response via OpenPhone
     const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
-    if (defaultNumber) {
-      const { openPhoneService } = await import('../services/openphoneService');
-      const responseWithSignature = draft.ai_response + ' - ClubAI';
-      await openPhoneService.sendMessage(draft.phone_number, defaultNumber, responseWithSignature);
-
-      // Store the sent message
-      const { storeClubAIMessage } = await import('../services/clubaiService');
-      await storeClubAIMessage(draft.conversation_id, responseWithSignature, draft.confidence);
-
-      // Update conversation tracking
-      try {
-        await db.query(`
-          UPDATE openphone_conversations SET
-            clubai_active = true,
-            clubai_messages_sent = COALESCE(clubai_messages_sent, 0) + 1
-          WHERE id = $1
-        `, [draft.conversation_id]);
-      } catch { /* columns may not exist */ }
+    if (!defaultNumber) {
+      return res.status(500).json({ success: false, error: 'OPENPHONE_DEFAULT_NUMBER not configured — draft not sent' });
     }
 
-    // Mark draft as approved
-    await db.query(`
+    // Atomically claim the draft BEFORE sending. Only one request can flip
+    // pending -> approved, so concurrent approvals / double-clicks can't double-text.
+    const claim = await db.query(`
       UPDATE clubai_draft_responses
       SET status = 'approved', reviewed_by = $2, reviewed_at = NOW()
-      WHERE id = $1
+      WHERE id = $1 AND status = 'pending'
+      RETURNING *
     `, [id, userId]);
+
+    if (claim.rows.length === 0) {
+      return res.status(409).json({ success: false, error: 'Draft not found or already reviewed' });
+    }
+
+    const draft = claim.rows[0];
+    const responseWithSignature = draft.ai_response + ' - ClubAI';
+
+    // Send the response via OpenPhone. If the send itself fails, revert the claim
+    // so an operator can retry (post-send bookkeeping failures never revert).
+    try {
+      const { openPhoneService } = await import('../services/openphoneService');
+      await openPhoneService.sendMessage(draft.phone_number, defaultNumber, responseWithSignature);
+    } catch (sendErr) {
+      await db.query(`
+        UPDATE clubai_draft_responses
+        SET status = 'pending', reviewed_by = NULL, reviewed_at = NULL
+        WHERE id = $1
+      `, [id]).catch(() => {});
+      logger.error('[ClubAI Drafts] Approve send failed, reverted to pending:', sendErr);
+      return res.status(500).json({ success: false, error: 'Failed to send draft' });
+    }
+
+    // Best-effort bookkeeping after a confirmed send — must not revert the claim.
+    try {
+      const { storeClubAIMessage } = await import('../services/clubaiService');
+      await storeClubAIMessage(draft.conversation_id, responseWithSignature, draft.confidence);
+    } catch (e) { logger.warn('[ClubAI Drafts] storeClubAIMessage failed post-send:', e); }
+
+    try {
+      await db.query(`
+        UPDATE openphone_conversations SET
+          clubai_active = true,
+          clubai_messages_sent = COALESCE(clubai_messages_sent, 0) + 1
+        WHERE id = $1
+      `, [draft.conversation_id]);
+    } catch { /* columns may not exist */ }
 
     return res.json({ success: true, message: 'Draft approved and sent' });
   } catch (error) {
@@ -3127,36 +3138,48 @@ router.post('/clubai-drafts/:id/edit', authenticate, roleGuard(['admin', 'operat
       return res.status(400).json({ success: false, error: 'editedResponse is required' });
     }
 
-    const draftResult = await db.query(`
-      SELECT * FROM clubai_draft_responses WHERE id = $1 AND status = 'pending'
-    `, [id]);
-
-    if (draftResult.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Draft not found or already reviewed' });
+    const edited = editedResponse.trim();
+    const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
+    if (!defaultNumber) {
+      return res.status(500).json({ success: false, error: 'OPENPHONE_DEFAULT_NUMBER not configured — draft not sent' });
     }
 
-    const draft = draftResult.rows[0];
+    // Atomically claim BEFORE sending so concurrent edits/double-clicks can't double-text.
+    const claim = await db.query(`
+      UPDATE clubai_draft_responses
+      SET status = 'edited', operator_response = $2, reviewed_by = $3, reviewed_at = NOW()
+      WHERE id = $1 AND status = 'pending'
+      RETURNING *
+    `, [id, edited, userId]);
 
-    // Send the edited response
-    const defaultNumber = process.env.OPENPHONE_DEFAULT_NUMBER;
-    if (defaultNumber) {
+    if (claim.rows.length === 0) {
+      return res.status(409).json({ success: false, error: 'Draft not found or already reviewed' });
+    }
+
+    const draft = claim.rows[0];
+
+    // Send the edited response. Revert the claim only if the send itself fails.
+    try {
       const { openPhoneService } = await import('../services/openphoneService');
-      await openPhoneService.sendMessage(draft.phone_number, defaultNumber, editedResponse.trim());
+      await openPhoneService.sendMessage(draft.phone_number, defaultNumber, edited);
+    } catch (sendErr) {
+      await db.query(`
+        UPDATE clubai_draft_responses
+        SET status = 'pending', operator_response = NULL, reviewed_by = NULL, reviewed_at = NULL
+        WHERE id = $1
+      `, [id]).catch(() => {});
+      logger.error('[ClubAI Drafts] Edit send failed, reverted to pending:', sendErr);
+      return res.status(500).json({ success: false, error: 'Failed to send edited draft' });
+    }
 
-      // Store as operator message (not AI — since it was edited)
+    // Store as operator message (not AI — since it was edited). Best-effort post-send.
+    try {
       await db.query(`
         INSERT INTO conversation_messages
         (conversation_id, sender_type, message_text)
         VALUES ($1, 'operator', $2)
-      `, [draft.conversation_id, editedResponse.trim()]);
-    }
-
-    // Mark draft as edited, store the correction for learning
-    await db.query(`
-      UPDATE clubai_draft_responses
-      SET status = 'edited', operator_response = $2, reviewed_by = $3, reviewed_at = NOW()
-      WHERE id = $1
-    `, [id, editedResponse.trim(), userId]);
+      `, [draft.conversation_id, edited]);
+    } catch (e) { logger.warn('[ClubAI Drafts] Edit post-send store failed:', e); }
 
     return res.json({ success: true, message: 'Edited response sent' });
   } catch (error) {
@@ -3174,11 +3197,16 @@ router.post('/clubai-drafts/:id/reject', authenticate, roleGuard(['admin', 'oper
     const { id } = req.params;
     const userId = (req as any).user?.id || null;
 
-    await db.query(`
+    const claim = await db.query(`
       UPDATE clubai_draft_responses
       SET status = 'rejected', reviewed_by = $2, reviewed_at = NOW()
-      WHERE id = $1
+      WHERE id = $1 AND status = 'pending'
+      RETURNING id
     `, [id, userId]);
+
+    if (claim.rows.length === 0) {
+      return res.status(409).json({ success: false, error: 'Draft not found or already reviewed' });
+    }
 
     return res.json({ success: true, message: 'Draft rejected' });
   } catch (error) {

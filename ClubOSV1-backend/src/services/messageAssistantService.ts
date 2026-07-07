@@ -378,9 +378,9 @@ export class MessageAssistantService {
    */
   async markSuggestionAsSent(suggestionId: string): Promise<void> {
     await db.query(`
-      UPDATE message_suggestions 
+      UPDATE message_suggestions
       SET sent = TRUE, sent_at = NOW()
-      WHERE id = $2
+      WHERE id = $1
     `, [suggestionId]);
   }
   

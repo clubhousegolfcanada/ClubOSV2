@@ -2,6 +2,17 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.35.11] - 2026-07-06
+
+### Fixed — Three critical production bugs from the core-functions audit (ClubAI, Messages)
+
+- **SECURITY (`routes/openphone.ts`): unauthenticated endpoints were dumping all customer SMS + PII to the public internet.** `GET /api/openphone/debug/all`, `/debug/recent`, `/conversations/unprocessed`, `/stats`, `PUT /conversations/:id/processed`, and `POST /webhook-test` had no auth — anyone could `curl` the backend and receive names, phone numbers, and full SMS bodies for ~5,000 customers. All six now require `authenticate + roleGuard(['admin'])`, matching their already-guarded twin `/recent-conversations`. No app/service called them (verified), so no functional impact.
+- **ClubAI draft approve/edit/reject double-texted customers (`routes/enhanced-patterns.ts`, migration `374`).** `clubai_draft_responses.reviewed_by` was `INTEGER` while `users.id` is `UUID`, so the status UPDATE threw *after* the SMS was already sent → the draft stayed `pending` → operator retried → customer got the message twice. Fixed the column type (self-healing startup DDL in `index.ts` + migration 374, mirroring the radar rollout) and reworked all three endpoints to **atomically claim the draft (`UPDATE … WHERE status='pending' RETURNING *`) before sending** — concurrent approvals / double-clicks now get a 409 instead of a second SMS. Send failures revert the claim to `pending` for retry; a missing `OPENPHONE_DEFAULT_NUMBER` now errors instead of falsely reporting "approved and sent".
+- **AI-suggestion approve-and-send always failed after sending (`services/messageAssistantService.ts`).** `markSuggestionAsSent` referenced `$2` with only one bound parameter, so every call threw *after* the SMS was delivered — inviting duplicate sends. One-character fix (`$2` → `$1`).
+
+### Audit
+- Added `docs/plans/CORE_FUNCTIONS_AUDIT_2026-07.md` — full senior-engineer audit of ClubAI, Messages, Commands, and TrackMan (3 critical, 17 high, ~30 medium findings, prioritized). This release ships the three criticals; highs/mediums tracked there.
+
 ## [1.35.10] - 2026-07-06
 
 ### Added — Per-bay agent version detection; radar features safe to enable before agent rollout

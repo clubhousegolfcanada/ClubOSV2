@@ -2157,7 +2157,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
 });
 
 // Get unprocessed conversations for knowledge extraction
-router.get('/conversations/unprocessed', async (req: Request, res: Response) => {
+router.get('/conversations/unprocessed', authenticate, roleGuard(['admin']), async (req: Request, res: Response) => {
   try {
     const limit = parseInt(req.query.limit as string) || 50;
     
@@ -2184,7 +2184,7 @@ router.get('/conversations/unprocessed', async (req: Request, res: Response) => 
 });
 
 // Mark conversation as processed
-router.put('/conversations/:id/processed', async (req: Request, res: Response) => {
+router.put('/conversations/:id/processed', authenticate, roleGuard(['admin']), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     
@@ -2226,7 +2226,7 @@ router.get('/health', async (_req: Request, res: Response) => {
 });
 
 // Simple webhook test (no auth, just logs)
-router.post('/webhook-test', async (req: Request, res: Response) => {
+router.post('/webhook-test', authenticate, roleGuard(['admin']), async (req: Request, res: Response) => {
   logger.debug('WEBHOOK TEST RECEIVED:', JSON.stringify(req.body, null, 2));
   logger.info('Webhook test received', { body: req.body });
   
@@ -2269,8 +2269,8 @@ router.post('/webhook-test', async (req: Request, res: Response) => {
   });
 });
 
-// Debug endpoint to check all OpenPhone data (no auth for debugging)
-router.get('/debug/all', async (_req: Request, res: Response) => {
+// Debug endpoint to check all OpenPhone data (admin-only: returns raw customer PII)
+router.get('/debug/all', authenticate, roleGuard(['admin']), async (_req: Request, res: Response) => {
   try {
     const result = await db.query(`
       SELECT 
@@ -2470,7 +2470,7 @@ router.post('/import-history', authenticate, roleGuard(['admin']), async (req: R
 });
 
 // Get conversation statistics
-router.get('/stats', async (_req: Request, res: Response) => {
+router.get('/stats', authenticate, roleGuard(['admin']), async (_req: Request, res: Response) => {
   try {
     const stats = await db.query(`
       SELECT 
@@ -2550,8 +2550,8 @@ router.get('/recent-conversations', authenticate, roleGuard(['admin']), async (r
   }
 });
 
-// Debug endpoint for recent conversations (no auth required)
-router.get('/debug/recent', async (req: Request, res: Response) => {
+// Debug endpoint for recent conversations (admin-only: returns raw customer PII)
+router.get('/debug/recent', authenticate, roleGuard(['admin']), async (req: Request, res: Response) => {
   try {
     const limit = parseInt(req.query.limit as string) || 10;
     
