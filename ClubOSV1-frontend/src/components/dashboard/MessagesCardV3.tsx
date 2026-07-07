@@ -46,6 +46,7 @@ export default function MessagesCardV3() {
 
   // AbortController for cancelling in-flight requests on unmount
   const abortControllerRef = useRef<AbortController | null>(null);
+  const sendingRef = useRef<Record<string, boolean>>({});
 
   // Load saved collapsed state on mount
   useEffect(() => {
@@ -156,6 +157,12 @@ export default function MessagesCardV3() {
     const message = customMessage || replyText[conv.id];
     if (!message?.trim()) return;
 
+    // Synchronous in-flight guard. The `sending` state closure can be stale across two
+    // rapid Enter presses (React may not have re-rendered between them), so a ref is
+    // what actually prevents a duplicate SMS. State still drives the disabled UI.
+    if (sendingRef.current[conv.id]) return;
+    sendingRef.current[conv.id] = true;
+
     setSending({ ...sending, [conv.id]: true });
 
     try {
@@ -190,6 +197,7 @@ export default function MessagesCardV3() {
       logger.error('Failed to send message:', error);
       toast.error('Failed to send message');
     } finally {
+      sendingRef.current[conv.id] = false;
       setSending({ ...sending, [conv.id]: false });
     }
   };

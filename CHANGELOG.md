@@ -2,6 +2,19 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.35.17] - 2026-07-07
+
+### Fixed — Medium batch #1: ClubAI admin + messaging data integrity
+
+- **ClubAI conversation-monitor filters were silently ignored (`routes/enhanced-patterns.ts`).** The `WHERE clubai_messages_sent > 0 OR clubai_active OR clubai_escalated` base clause wasn't parenthesized, so the appended `AND` filter bound only to the last OR term (SQL precedence) — "escalated", "active", and "today" all returned the unfiltered set. Parenthesized the base group.
+- **ClubAI monitor + escalation views showed the OLDEST messages (`routes/enhanced-patterns.ts`).** Both message subqueries used `ORDER BY created_at ASC LIMIT 30/20`, so long threads showed the first messages instead of the recent ones. Changed to `DESC` (newest N), still displayed chronologically via the outer `json_agg ... ASC`.
+- **Knowledge edit silently kept a stale search vector (`routes/enhanced-patterns.ts`).** When embedding regeneration failed after a text edit, the row kept its old embedding (searched by a vector that no longer matches its text) but the API still returned plain success. Now returns a `warning` so the operator knows to re-save.
+- **Outbound messages could append to an arbitrary/old conversation row (`services/openphoneService.ts`).** `storeOutboundMessage` selected the conversation with no `ORDER BY`/`LIMIT`, so repeat customers (multiple rows) could get an outbound written to a stale thread. Now pins to the most-recent row (`ORDER BY updated_at DESC LIMIT 1`), matching the inbound webhook.
+- **A DB error after a successful send was mislabeled as a send failure (`services/openphoneService.ts`).** The stored-copy write ran unguarded after the SMS was already delivered; a failure there threw into the send catch, logging a delivered message as 'failed' and inviting a resend. Storage is now best-effort and never masks a successful send.
+- **`PUT /conversations/:phone/read` had no role guard (`routes/messages.ts`).** Any authenticated role (incl. customer/kiosk) could zero operator unread counts. Added `roleGuard(['admin','operator','support'])`.
+- **Malformed ClubAI tool call texted the customer "undefined Box undefined" (`services/clubaiService.ts`).** An unparseable/incomplete `restart_trackman`/`reboot_radar` call fell through with empty args. Now escalates to a human instead of sending a broken confirmation.
+- **Dashboard messages card could double-send on rapid Enter (`components/dashboard/MessagesCardV3.tsx`).** The `sending` state closure could be stale across two fast Enter presses. Added a synchronous ref guard so the second press is dropped.
+
 ## [1.35.16] - 2026-07-07
 
 ### Changed — ClubAI auto-correction is now additive-only, never destructive (audit H7)

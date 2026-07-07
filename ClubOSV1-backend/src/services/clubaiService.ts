@@ -420,6 +420,19 @@ export async function generateResponse(
           args = {};
         }
 
+        // Guard against an unparseable/incomplete tool call. Without this, missing
+        // args flow through as `undefined` and the customer gets "Got it — undefined
+        // Box undefined". Escalate to a human instead of sending a broken message.
+        if (!args || args.location === undefined || args.bay_number === undefined) {
+          logger.warn(`[ClubAI] ${toolCall.function.name} tool call missing location/bay — escalating`, { args, phoneNumber, conversationId });
+          return {
+            response: null,
+            escalate: true,
+            escalationSummary: `ClubAI tried to ${toolCall.function.name} but the request was incomplete (missing location/bay) — needs a human.`,
+            confidence: 0
+          };
+        }
+
         logger.info(`[ClubAI] GPT requested ${toolCall.function.name} function call`, { args, phoneNumber, conversationId });
 
         const textResponse = choice.content?.trim() || null;

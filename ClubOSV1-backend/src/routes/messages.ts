@@ -901,6 +901,7 @@ router.post('/send',
 // Mark messages as read
 router.put('/conversations/:phoneNumber/read',
   authenticate,
+  roleGuard(['admin', 'operator', 'support']),
   async (req, res, next) => {
     try {
       const { phoneNumber } = req.params;

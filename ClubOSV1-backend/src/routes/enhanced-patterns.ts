@@ -2688,8 +2688,10 @@ router.get('/clubai-conversations', authenticate, roleGuard(['admin', 'operator'
   try {
     const { filter = 'all', limit = '20', offset = '0' } = req.query;
 
-    // Get conversations where ClubAI was involved
-    let whereClause = `WHERE oc.clubai_messages_sent > 0 OR oc.clubai_active = true OR oc.clubai_escalated = true`;
+    // Get conversations where ClubAI was involved. The base OR-group MUST be
+    // parenthesized — otherwise the AND filters below bind only to the last OR term
+    // (SQL precedence), silently returning the unfiltered set for escalated/active/today.
+    let whereClause = `WHERE (oc.clubai_messages_sent > 0 OR oc.clubai_active = true OR oc.clubai_escalated = true)`;
     if (filter === 'escalated') {
       whereClause += ` AND oc.clubai_escalated = true`;
     } else if (filter === 'active') {
@@ -2715,7 +2717,7 @@ router.get('/clubai-conversations', authenticate, roleGuard(['admin', 'operator'
             SELECT cm.sender_type, cm.message_text, cm.pattern_confidence, cm.created_at
             FROM conversation_messages cm
             WHERE cm.conversation_id = oc.id::text
-            ORDER BY cm.created_at ASC
+            ORDER BY cm.created_at DESC
             LIMIT 30
           ) sub
         ) as messages,
@@ -3240,7 +3242,7 @@ router.get('/clubai-escalations', authenticate, roleGuard(['admin', 'operator'])
             SELECT cm.sender_type, cm.message_text, cm.created_at
             FROM conversation_messages cm
             WHERE cm.conversation_id = oc.id::text
-            ORDER BY cm.created_at ASC
+            ORDER BY cm.created_at DESC
             LIMIT 20
           ) sub
         ) as messages,
@@ -3355,6 +3357,7 @@ router.put('/clubai-knowledge/:id', authenticate, roleGuard(['admin', 'operator'
     );
 
     // Regenerate embedding if text fields changed
+    let embeddingWarning: string | null = null;
     if (customerQuestion !== undefined || teamResponse !== undefined) {
       const updated = await db.query(
         `SELECT customer_message, team_response FROM clubai_knowledge WHERE id = $1`,
@@ -3372,12 +3375,18 @@ router.put('/clubai-knowledge/:id', authenticate, roleGuard(['admin', 'operator'
             `UPDATE clubai_knowledge SET embedding = $1, embedding_generated_at = NOW() WHERE id = $2`,
             [embedding, id]
           );
+        } else {
+          // Text changed but the new embedding couldn't be generated — the entry is
+          // now searched by a STALE vector that no longer matches its text. Surface it
+          // so the operator knows to re-save rather than assuming the edit fully applied.
+          embeddingWarning = 'Text saved, but the search index could not be updated (embedding service error). Re-save this entry to fix search matching.';
+          logger.warn(`[ClubAI Knowledge] Embedding regeneration failed for entry ${id} after a text edit — search vector is stale`);
         }
       }
     }
 
     logger.info(`[ClubAI Knowledge] Entry ${id} updated by ${userRole}`);
-    return res.json({ success: true, message: 'Knowledge entry updated' });
+    return res.json({ success: true, message: 'Knowledge entry updated', ...(embeddingWarning ? { warning: embeddingWarning } : {}) });
   } catch (error) {
     logger.error('[ClubAI Knowledge] Update error:', error);
     return res.status(500).json({ success: false, error: 'Failed to update knowledge entry' });

@@ -280,15 +280,22 @@ export class OpenPhoneService {
         v1Client.post('/messages', payload)
       );
 
-      // Store message in database
-      await this.storeOutboundMessage({
-        id: response.data.data?.id || response.data.id,
-        to,
-        from,
-        text,
-        status: 'sent',
-        createdAt: new Date().toISOString()
-      });
+      // Store message in database. The SMS is already sent at this point — a storage
+      // failure must NOT be reported as a send failure (that mislabels a delivered
+      // message as 'failed' and invites the operator to resend). Best-effort; the
+      // inbound OpenPhone webhook also persists the outbound copy.
+      try {
+        await this.storeOutboundMessage({
+          id: response.data.data?.id || response.data.id,
+          to,
+          from,
+          text,
+          status: 'sent',
+          createdAt: new Date().toISOString()
+        });
+      } catch (storeErr) {
+        logger.warn('[OpenPhone] Outbound stored-copy failed (message was still sent):', storeErr);
+      }
 
       return response.data;
     } catch (error: any) {
@@ -359,9 +366,12 @@ export class OpenPhoneService {
   private async storeOutboundMessage(message: any) {
     const phoneNumber = message.to;
     
-    // Update conversation with new message
+    // Update conversation with new message. Pin to the MOST RECENT conversation row —
+    // repeat customers accumulate multiple rows (a new one per >1h gap), and without
+    // ORDER BY/LIMIT this could append to an arbitrary/old row and resurrect a stale
+    // thread. The inbound webhook selects the current row the same way (updated_at DESC).
     const existingConv = await db.query(
-      'SELECT id, messages FROM openphone_conversations WHERE phone_number = $1',
+      'SELECT id, messages FROM openphone_conversations WHERE phone_number = $1 ORDER BY updated_at DESC LIMIT 1',
       [phoneNumber]
     );
     
