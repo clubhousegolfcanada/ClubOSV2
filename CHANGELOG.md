@@ -2,6 +2,14 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.35.15] - 2026-07-07
+
+### Fixed — Operator-send latency, Commands honesty, message-switch race (audit H9, H17, H12)
+
+- **H9 — Operator `/send` blocked on a synchronous GPT-4 call (`routes/messages.ts`).** After the SMS was sent, the handler awaited disabled-V3-PLS pattern learning inline — a GPT-4 `extractConversationContext` call (default ~10min SDK timeout) plus `learnFromHumanResponse`/`learnFromStaffResponse` — before returning. Operators saw a 5–15s spinner (and could resend, duplicating the SMS) for learning data that is never read. Both learning operations are now detached (fire-and-forget); the fast fallback message-storage stays synchronous.
+- **H17 — Commands UI showed false success for dead bays (`components/RemoteActionsBar.tsx`, `pages/commands.tsx`).** RemoteActionsBar and the PC-reboot button reported success on queue and never checked the outcome. Now: success toasts use honest "queued" wording, the PC-reboot button polls the real command status via the existing `pollJobStatus`, and error toasts surface the real backend reason (offline agent, cooldown) instead of generic axios text. Combined with H15 (backend now returns `device_offline`), a dead bay no longer produces a confident success toast. Also fixes the dropped-reason medium finding on the main reset handler.
+- **H12 — Conversation-switch stale-response race (`pages/messages.tsx`).** The in-flight `/full-history` fetch was only aborted on the cache-miss path, so clicking conversation A (slow) then B (cached) let A's late response flip the thread — and the compose target — back to A, risking a reply to the wrong customer. Added a monotonic selection token: every selection aborts the prior fetch and drops its own result if a newer selection has started; aborted fetches no longer re-select the old conversation.
+
 ## [1.35.14] - 2026-07-07
 
 ### Fixed — Security hardening + ClubAI escalation robustness (audit H5, H8, H13)

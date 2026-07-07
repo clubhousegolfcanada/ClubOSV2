@@ -10,8 +10,9 @@
 > - ✅ **Shipped in v1.35.12:** H1, H2, H4, H10, H11, H14.
 > - ✅ **Shipped in v1.35.13:** H3, H15, H16.
 > - ✅ **Shipped in v1.35.14:** H5, H8, H13 (+ H6 verified already closed by C2).
-> - ⬜ **Still open:** H7, H9, H12, H17 + the medium batch.
-> - ⏸️ **Needs a design decision (H7):** should auto-corrections go to a review queue, or write live with a stricter threshold? This one changes ClubAI learning behavior — held for owner input.
+> - ✅ **Shipped in v1.35.15:** H9, H12, H17.
+> - ⬜ **Still open:** H7 (the last high) + the medium batch.
+> - ⏸️ **Needs a design decision (H7):** should auto-corrections go to a review queue, or write live with a stricter threshold? This one changes ClubAI learning behavior — held for owner input. **All other highs are shipped.**
 > - ⚠️ **Follow-up needed for H16:** set `TRACKMAN_SETUP_SECRET` in Railway and rotate the value baked into the agent .exe (the code fix stops key-rotation hijack, but the fallback secret value is still public until rotated).
 
 ---

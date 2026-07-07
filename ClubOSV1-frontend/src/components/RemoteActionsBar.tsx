@@ -150,14 +150,18 @@ const RemoteActionsBar: React.FC = () => {
       };
 
       const response = await remoteActionsAPI.execute(params);
-      
+
       if (response.success) {
-        notify('success', `${action} initiated for ${location}${bayNumber ? ` Bay ${bayNumber}` : ''}`);
+        // Honest "queued" wording — the command runs on the bay agent's next poll,
+        // it is not confirmed complete here. The backend already blocks offline bays.
+        notify('success', response.message || `${action} queued for ${location}${bayNumber ? ` Bay ${bayNumber}` : ''}`);
       } else {
         notify('error', response.message || 'Action failed');
       }
     } catch (error: any) {
-      notify('error', error.message || 'Failed to execute action');
+      // Surface the real backend reason (offline agent, cooldown, ...) instead of the
+      // generic axios "Request failed with status code 400".
+      notify('error', error.response?.data?.message || error.message || 'Failed to execute action');
     } finally {
       setExecutingActions(prev => {
         const next = new Set(prev);

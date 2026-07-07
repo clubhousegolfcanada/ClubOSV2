@@ -189,6 +189,7 @@ export default function Messages() {
   const abortControllerRef = useRef<AbortController | null>(null);
   const historyAbortRef = useRef<AbortController | null>(null);
   const threadRefreshAbortRef = useRef<AbortController | null>(null);
+  const selectionSeqRef = useRef(0);
   // Cache: phone -> { messages, updatedAt, fetchedAt } to skip re-fetching unchanged conversations
   const historyCache = useRef<Map<string, { messages: Message[]; meta: any; updatedAt: string; fetchedAt: number }>>(new Map());
 
@@ -727,6 +728,14 @@ export default function Messages() {
   }, [refreshOpenThread]);
 
   const selectConversation = useCallback(async (conversation: Conversation) => {
+    // Monotonic token so a slow history fetch from an earlier selection can't apply
+    // after the operator has switched conversations (which would flip the thread —
+    // and the compose target — back to the previous customer).
+    const mySeq = ++selectionSeqRef.current;
+    // Abort any in-flight history fetch from a previous selection, even when THIS
+    // selection is a cache hit (the old cache-miss-only abort left that gap).
+    historyAbortRef.current?.abort();
+
     // Check if switching to a different conversation
     const isSwitchingConversation = selectedConversation?.phone_number !== conversation.phone_number;
 
@@ -758,14 +767,16 @@ export default function Messages() {
             fetchedMessages = cached.messages;
             meta = cached.meta;
           } else {
-            // Cache miss -- fetch from server
-            historyAbortRef.current?.abort();
+            // Cache miss -- fetch from server (prior fetch already aborted at the top)
             historyAbortRef.current = new AbortController();
 
             const historyResponse = await http.get(
               `messages/conversations/${phone}/full-history`,
               { signal: historyAbortRef.current.signal }
             );
+
+            // A newer selection started while awaiting — drop this stale result.
+            if (selectionSeqRef.current !== mySeq) return;
 
             if (!historyResponse.data.success) {
               setSelectedConversation(conversation);
@@ -788,6 +799,9 @@ export default function Messages() {
               fetchedAt: Date.now(),
             });
           }
+
+          // Guard again before applying — covers the cache-miss await above.
+          if (selectionSeqRef.current !== mySeq) return;
 
           if (true) {
             const { total_conversations, first_contact, last_contact, hasMore } = meta;
@@ -830,7 +844,11 @@ export default function Messages() {
             }, 50);
           }
         }
-      } catch (error) {
+      } catch (error: any) {
+        // Ignore aborted fetches and superseded selections — don't flip state back to
+        // a conversation the operator has already navigated away from.
+        if (selectionSeqRef.current !== mySeq) return;
+        if (error?.name === 'CanceledError' || error?.name === 'AbortError' || error?.code === 'ERR_CANCELED') return;
         logger.error('Error fetching conversation history:', error);
         toast.error('Failed to load conversation history');
 

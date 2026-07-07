@@ -625,8 +625,9 @@ export default function CommandsRedesigned() {
       }
       
     } catch (error: any) {
-      toast.error(error.message || 'Failed to execute action', { 
-        id: toastId 
+      // Surface the real backend reason (offline agent, cooldown, ...) not generic axios text.
+      toast.error(error.response?.data?.message || error.message || 'Failed to execute action', {
+        id: toastId
       });
     }
   };
@@ -845,12 +846,16 @@ export default function CommandsRedesigned() {
                                                 location: trigger.location!,
                                                 bayNumber: trigger.bayNumber || ''
                                               });
-                                              toast.success('PC reboot initiated. Box will be back online in 3-5 minutes.', { 
+                                              toast.success(result.message || 'PC reboot queued. Box will be unavailable for 3-5 minutes.', {
                                                 id: toastId,
-                                                duration: 10000 
+                                                duration: 10000
                                               });
-                                            } catch (error) {
-                                              toast.error('Failed to reboot PC', { id: toastId });
+                                              // Poll for the real outcome instead of assuming success.
+                                              if (result.jobId && !result.simulated) {
+                                                pollJobStatus(result.jobId, result.device);
+                                              }
+                                            } catch (error: any) {
+                                              toast.error(error.response?.data?.message || error.message || 'Failed to reboot PC', { id: toastId });
                                             }
                                           }}
                                           className="flex flex-col items-center gap-0.5 p-1.5 bg-[var(--bg-secondary)] hover:bg-red-500 border border-red-500/50 hover:border-red-500 rounded transition-all group/btn text-xs"

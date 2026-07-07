@@ -646,7 +646,11 @@ router.post('/send',
         logger.error('[Operator Lockout] Failed to set lockout in /messages/send:', lockoutErr);
       }
 
-      // PATTERN LEARNING: Analyze full conversation when marked as done
+      // PATTERN LEARNING (disabled V3-PLS): run DETACHED. Its data is never read for
+      // auto-response, but the inline GPT-4 extractConversationContext call was adding
+      // 5-15s of latency to every operator send (and opening a duplicate-message
+      // window past the 5s dedup). Fire-and-forget so it never blocks the response.
+      void (async () => {
       try {
         // Import services
         const { patternLearningService } = await import('../services/patternLearningService');
@@ -758,6 +762,7 @@ router.post('/send',
         logger.error('[Pattern Learning] Failed to analyze conversation', error);
         // Don't fail the send if pattern learning fails
       }
+      })().catch(() => { /* detached — errors already logged inside */ });
 
       // Store message immediately as fallback (webhook will deduplicate if it arrives)
       const tempMessage = {
@@ -834,12 +839,11 @@ router.post('/send',
         temporaryId: tempMessage.id
       });
 
-      // Track staff response for learning
-      await aiAutomationService.learnFromStaffResponse(
-        formattedTo,
-        text,
-        req.user?.id
-      );
+      // Track staff response for learning (disabled V3-PLS) — detached so it never
+      // blocks the send response. Promise.resolve wrapper also catches sync throws.
+      Promise.resolve()
+        .then(() => aiAutomationService.learnFromStaffResponse(formattedTo, text, req.user?.id))
+        .catch(err => logger.warn('[AI Automation] learnFromStaffResponse failed:', err));
       
       // Log the action
       logger.info('Message sent via OpenPhone', {
