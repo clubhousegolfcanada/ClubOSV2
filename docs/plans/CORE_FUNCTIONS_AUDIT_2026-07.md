@@ -12,7 +12,9 @@
 > - ✅ **Shipped in v1.35.14:** H5, H8, H13 (+ H6 verified already closed by C2).
 > - ✅ **Shipped in v1.35.15:** H9, H12, H17.
 > - ✅ **Shipped in v1.35.16:** H7 (owner chose "stricter + no auto-deactivate").
-> - 🎉 **All 3 criticals + all 17 highs are shipped.** Remaining: the ~30 medium batch below.
+> - 🎉 **All 3 criticals + all 17 highs are shipped.**
+> - ✅ **Mediums shipped (v1.35.17–18):** clubai-conversations filter precedence, monitor/escalation message ordering, knowledge-edit stale-embedding warning, storeOutboundMessage most-recent-row, send/DB-failure mislabel, PUT /read role guard, malformed tool-call escalation, dashboard rapid-Enter double-send, prompt-cache un-pin on transient DB error, null-embedding clean-fail. (10 mediums)
+> - ⏸️ **Mediums deferred (need a careful/design pass, not rushed):** escalation-queue auto-resolve signal; approve-and-send atomic claim (deterministic part already fixed by C3); webhook dedup + persistence-ordering (`openphone.ts:72/368` — must not reintroduce double-replies); safety auto-responses firing when ClubAI disabled (`openphone.ts:1034`); operator-lockout 2h cap (`openphone.ts:1513`); server-side restart-confirmation state (`openphone.ts:1191`); double-reply race (`openphone.ts:1145`); X-Forwarded-For spoof on the rate limiter; serialized OpenPhone queue timeout; O(N) vector scan.
 > - ⚠️ **Follow-up needed for H16:** set `TRACKMAN_SETUP_SECRET` in Railway and rotate the value baked into the agent .exe (the code fix stops key-rotation hijack, but the fallback secret value is still public until rotated).
 
 ---
