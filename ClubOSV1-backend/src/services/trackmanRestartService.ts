@@ -17,6 +17,7 @@ export type RestartFailureReason =
   | 'invalid_location'
   | 'invalid_bay'
   | 'no_device'
+  | 'device_offline'
   | 'cooldown'
   | 'invalid_command'
   | 'agent_not_radar_capable'
@@ -108,13 +109,13 @@ export async function triggerRestart(
     let deviceResult;
     try {
       deviceResult = await query(
-        'SELECT id, display_name, radar_reachable FROM trackman_devices WHERE location = $1 AND bay_number = $2',
+        'SELECT id, display_name, radar_reachable, last_seen_at FROM trackman_devices WHERE location = $1 AND bay_number = $2',
         [location, bayNumber]
       );
     } catch (err: any) {
       if (err.code !== '42703') throw err;
       deviceResult = await query(
-        'SELECT id, display_name FROM trackman_devices WHERE location = $1 AND bay_number = $2',
+        'SELECT id, display_name, last_seen_at FROM trackman_devices WHERE location = $1 AND bay_number = $2',
         [location, bayNumber]
       );
     }
@@ -157,6 +158,20 @@ export async function triggerRestart(
         const cooldownMin = Math.round(cooldownMs / 60000);
         return { success: false, error: `Last ${commandType} was ${minutesAgo} min ago. Wait at least ${cooldownMin} minutes between ${commandType} commands.`, reason: 'cooldown' };
       }
+    }
+
+    // Liveness: don't promise a restart the agent can't perform. An offline bay PC
+    // (agent not heartbeating) would leave the command 'pending' until it expires —
+    // ClubAI would text the customer "restarting now" and then ghost them, and an
+    // operator would see a false success. Matches the dashboard's 2-minute online window.
+    const lastSeenMs = device.last_seen_at ? new Date(device.last_seen_at).getTime() : 0;
+    if (!lastSeenMs || (Date.now() - lastSeenMs) > 2 * 60 * 1000) {
+      logger.warn(`TrackMan ${commandType} blocked — ${location} Bay ${bayNumber} agent offline (last seen: ${device.last_seen_at || 'never'})`);
+      return {
+        success: false,
+        error: `${location} Bay ${bayNumber}'s agent isn't responding (no recent heartbeat) — it can't be restarted remotely right now.`,
+        reason: 'device_offline'
+      };
     }
 
     // Create command

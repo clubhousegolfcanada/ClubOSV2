@@ -402,8 +402,16 @@ const SETUP_SECRET = process.env.TRACKMAN_SETUP_SECRET || 'clubhouse247-trackman
  */
 router.post('/self-register', async (req: Request, res: Response) => {
   try {
-    const secret = req.headers['x-setup-secret'] as string;
-    if (!secret || secret !== SETUP_SECRET) {
+    // Timing-safe secret check. Warn loudly if the env var is unset — we're then
+    // falling back to the source-committed value, which is public; it should be set
+    // in Railway and rotated (and the agent .exe updated to match).
+    if (!process.env.TRACKMAN_SETUP_SECRET) {
+      logger.warn('[TrackMan] TRACKMAN_SETUP_SECRET not set — self-register is using the source-committed fallback secret. Set the env var and rotate the value.');
+    }
+    const provided = (req.headers['x-setup-secret'] as string) || '';
+    const secretOk = provided.length === SETUP_SECRET.length &&
+      crypto.timingSafeEqual(Buffer.from(provided), Buffer.from(SETUP_SECRET));
+    if (!secretOk) {
       return res.status(401).json({ success: false, error: 'Invalid setup secret' });
     }
 
@@ -433,14 +441,19 @@ router.post('/self-register', async (req: Request, res: Response) => {
 
     let result;
     if (existing.rows.length > 0) {
+      // Do NOT rotate the api_key on re-register. Rotating silently locked out the
+      // live agent (which keeps using its stored key) and handed a fresh valid key to
+      // anyone who called this endpoint with the setup secret — a device hijack that
+      // could feed false completion reports. Preserve the existing key so a legitimate
+      // re-install still recovers, and never mint a new one here.
       result = await query(
         `UPDATE trackman_devices
-         SET hostname = $1, display_name = $2, api_key = $3, status = 'unknown', updated_at = NOW()
-         WHERE location = $4 AND bay_number = $5
+         SET hostname = $1, display_name = $2, status = 'unknown', updated_at = NOW()
+         WHERE location = $3 AND bay_number = $4
          RETURNING id, hostname, display_name, location, bay_number, api_key`,
-        [hostname, displayName, deviceApiKey, location, bayNum]
+        [hostname, displayName, location, bayNum]
       );
-      logger.info(`TrackMan device re-registered: ${hostname} (replaced existing)`);
+      logger.info(`TrackMan device re-registered (existing key preserved): ${hostname}`);
     } else {
       result = await query(
         `INSERT INTO trackman_devices (hostname, display_name, location, bay_number, api_key)

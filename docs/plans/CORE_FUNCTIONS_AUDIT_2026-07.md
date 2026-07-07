@@ -8,7 +8,9 @@
 > **Remediation status (updated 2026-07-07):**
 > - ✅ **Shipped in v1.35.11:** C1, C2, C3 (all three criticals).
 > - ✅ **Shipped in v1.35.12:** H1, H2, H4, H10, H11, H14.
-> - ⬜ **Still open:** H3, H5, H6, H7, H8, H9, H12, H13, H15, H16, H17 + the medium batch.
+> - ✅ **Shipped in v1.35.13:** H3, H15, H16.
+> - ⬜ **Still open:** H5, H6, H7, H8, H9, H12, H13, H17 + the medium batch.
+> - ⚠️ **Follow-up needed for H16:** set `TRACKMAN_SETUP_SECRET` in Railway and rotate the value baked into the agent .exe (the code fix stops key-rotation hijack, but the fallback secret value is still public until rotated).
 
 ---
 

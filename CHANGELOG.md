@@ -2,6 +2,14 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.35.13] - 2026-07-07
+
+### Fixed — TrackMan restart-flow durability + security (audit H3, H15, H16)
+
+- **H15 — Restarts were queued for offline bays with no liveness check (`services/trackmanRestartService.ts`).** `triggerRestart` validated location/bay/radar/cooldown but never checked the agent heartbeat, so an offline bay PC returned `{success:true}` — ClubAI texted the customer "restarting now" and then ghosted them, and operators saw a false success. Now rejects with reason `device_offline` when `last_seen_at` is older than 2 minutes (matches the dashboard's online window); ClubAI escalates to a human instead.
+- **H3 — 120s restart follow-up was an in-memory `setTimeout`, lost on every deploy (`jobs/clubaiRestartFollowup.ts` new, `routes/openphone.ts`, `index.ts`).** A restart triggered shortly before a `git push` never sent its success/failure follow-up and never escalated on failure. Replaced with a durable DB-driven poller (30s) keyed on `clubai_restart_state`: it survives deploys, atomically claims each conversation before acting (no double-send), escalates + locks as part of the claim UPDATE (robust even if the SMS fails), and handles the timeout case the old timer ignored (agent never completes → escalate after 5 min).
+- **H16 — TrackMan device self-registration hardened (`routes/trackman-remote.ts`).** Re-registration used to **rotate an existing bay's api_key**, which locked out the live agent and handed a fresh valid key to anyone with the setup secret (device hijack + false completion reports). Re-register now **preserves the existing key** and never mints a new one. Also switched the setup-secret check to a timing-safe comparison and added a startup warning when `TRACKMAN_SETUP_SECRET` is unset (falling back to the source-committed value). NOTE: fully closing the secret exposure still requires setting `TRACKMAN_SETUP_SECRET` in Railway and rotating the value baked into the agent .exe.
+
 ## [1.35.12] - 2026-07-07
 
 ### Fixed — High-severity audit findings (ClubAI, Messages, TrackMan)

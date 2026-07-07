@@ -845,6 +845,13 @@ async function startServer() {
     radarRebootJob.start();
     logger.info('✅ Radar reboot job started');
 
+    // Start durable ClubAI restart follow-up poller (replaces the in-memory
+    // setTimeout that was lost on every deploy — sends success/failure follow-up
+    // SMS and escalates failed restarts from DB state).
+    const { clubaiRestartFollowupJob } = await import('./jobs/clubaiRestartFollowup');
+    clubaiRestartFollowupJob.start();
+    logger.info('✅ ClubAI restart follow-up job started');
+
     // SOP module disabled - using OpenAI Assistants directly
     logger.info('✅ Using OpenAI Assistants for AI responses');
     

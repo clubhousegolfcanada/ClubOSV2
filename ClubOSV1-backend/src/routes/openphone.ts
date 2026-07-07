@@ -1166,7 +1166,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
                   // Handle function calls (restart_trackman / reboot_radar)
                   const toolName = clubaiResult.functionCall?.name;
                   if (toolName === 'restart_trackman' || toolName === 'reboot_radar') {
-                    const { triggerRestart, checkRestartStatus } = await import('../services/trackmanRestartService');
+                    const { triggerRestart } = await import('../services/trackmanRestartService');
                     const args = clubaiResult.functionCall!.arguments;
                     const isRadar = toolName === 'reboot_radar';
 
@@ -1240,33 +1240,10 @@ router.post('/webhook', async (req: Request, res: Response) => {
                           commandId: restartResult.commandId
                         });
 
-                        // Follow-up check in 120 seconds
-                        setTimeout(async () => {
-                          try {
-                            const status = await checkRestartStatus(restartResult.commandId!);
-                            if (status.status === 'completed') {
-                              const followUp = isRadar
-                                ? `Radar should be back — hit a shot and let me know if it's tracking. - ClubAI`
-                                : `Should be back online now. Let me know if you need anything else! - ClubAI`;
-                              await openPhoneService.sendMessage(phoneNumber, clubaiDefaultNumber!, followUp);
-                              await clubaiService.storeClubAIMessage(convId, followUp, 0.9);
-                            } else if (status.status === 'failed') {
-                              const failMsg = isRadar
-                                ? `The radar reset didn't go through. Let me connect you with the team. - ClubAI`
-                                : `The restart didn't go through. Let me connect you with the team. - ClubAI`;
-                              await openPhoneService.sendMessage(phoneNumber, clubaiDefaultNumber!, failMsg);
-                              await clubaiService.storeClubAIMessage(convId, failMsg, 0.9);
-                              try {
-                                await db.query(`UPDATE openphone_conversations SET clubai_escalated = true, conversation_locked = true WHERE id = $1`, [convId]);
-                              } catch { /* ignore */ }
-                            }
-                            try {
-                              await db.query(`UPDATE openphone_conversations SET clubai_restart_state = NULL WHERE id = $1`, [convId]);
-                            } catch { /* ignore */ }
-                          } catch (followUpErr) {
-                            logger.error('[ClubAI] Tool follow-up error:', followUpErr);
-                          }
-                        }, 120000);
+                        // Follow-up (success/failure SMS + failure escalation) is handled by the
+                        // durable jobs/clubaiRestartFollowup poller, driven by the clubai_restart_state
+                        // set above. Previously an in-memory setTimeout(120s) did this — it was lost
+                        // on every deploy, so restarts near a git push never got a follow-up.
 
                         return res.json({ success: true, message: `ClubAI triggered ${toolName}` });
                       } else {
