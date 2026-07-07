@@ -2,6 +2,18 @@
 
 All notable changes to ClubOS will be documented in this file.
 
+## [1.35.16] - 2026-07-07
+
+### Changed — ClubAI auto-correction is now additive-only, never destructive (audit H7)
+
+- **H7 — the autonomous learning loop could silently corrupt the live knowledge base (`services/clubaiService.ts`, `services/clubaiKnowledgeService.ts`).** On every operator SMS within 30 min of a ClubAI reply, a classifier could tag it a "correction" and then (a) write the raw operator text into global knowledge at top authority and (b) **deactivate up to 5 existing entries** at a loose 0.6 similarity — no human review, and deactivated entries vanished from the admin list. One misclassification could disable correct curated knowledge.
+  - **Removed the auto-deactivation entirely** — auto-corrections are now purely additive; no existing entry is ever silently disabled.
+  - **Auto-corrections are stored at lower confidence (0.7 vs 0.95 for operator-curated).** `getRAGContext` now holds low-confidence (auto) manual entries to a stricter similarity bar (≥0.6) before they can override other answers, while operator-curated corrections keep their existing loose 0.45 threshold. A single misclassified or conversation-specific correction can no longer dominate a loosely-related question from a different customer.
+  - Chosen approach per owner decision: "stricter + no auto-deactivate" (over a full review queue or disabling learning).
+
+### Audit complete
+- **All 3 critical + all 17 high findings from the core-functions audit are now shipped** (v1.35.11–16). Remaining: the medium batch, tracked in `docs/plans/CORE_FUNCTIONS_AUDIT_2026-07.md`.
+
 ## [1.35.15] - 2026-07-07
 
 ### Fixed — Operator-send latency, Commands honesty, message-switch race (audit H9, H17, H12)

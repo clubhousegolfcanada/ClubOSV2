@@ -3,7 +3,7 @@ import { join } from 'path';
 import { getOpenAIClient } from '../utils/openaiClient';
 import { logger } from '../utils/logger';
 import { db } from '../utils/database';
-import { getRAGContext, logSearch, addManualKnowledge, searchKnowledge } from './clubaiKnowledgeService';
+import { getRAGContext, logSearch, addManualKnowledge } from './clubaiKnowledgeService';
 import { isClubAIRestartEnabled, isClubAIRadarRebootEnabled, TRACKMAN_LOCATIONS } from './trackmanRestartService';
 
 interface ClubAIFunctionCall {
@@ -788,7 +788,11 @@ Return JSON only: {"isCorrection": true/false, "correctedInfo": "brief descripti
 
     const resolvedIntent = parsed.intent || 'general_inquiry';
 
-    // 5a: Add to knowledge base
+    // 5a: Add to knowledge base — ADDITIVE ONLY, at a LOWER confidence (0.7) than
+    // operator-curated knowledge (0.95). We deliberately DO NOT deactivate any existing
+    // entries: a single autonomous misclassification must never silently disable correct
+    // curated knowledge (and deactivated entries vanish from the admin list). The lower
+    // confidence also makes getRAGContext hold this entry to a stricter similarity bar.
     const knowledgeEntryId = await addManualKnowledge(
       resolvedIntent,
       customerMessage.trim(),
@@ -798,32 +802,11 @@ Return JSON only: {"isCorrection": true/false, "correctedInfo": "brief descripti
         original_ai_response: cleanAiMessage,
         corrected_info: parsed.correctedInfo,
         phone_number: phoneNumber,
-      }
+      },
+      0.7
     );
 
-    // 5b: Deactivate conflicting knowledge entries
-    let deactivatedCount = 0;
-    if (knowledgeEntryId) {
-      try {
-        const similar = await searchKnowledge(customerMessage.trim(), { limit: 5, threshold: 0.6 });
-        const toDeactivate = similar.filter(s =>
-          s.knowledge_id !== knowledgeEntryId &&
-          s.team_response !== operatorMessage.trim()
-        );
-        if (toDeactivate.length > 0) {
-          const ids = toDeactivate.map(s => s.knowledge_id);
-          await db.query(
-            `UPDATE clubai_knowledge SET is_active = FALSE, updated_at = NOW() WHERE id = ANY($1)`,
-            [ids]
-          );
-          deactivatedCount = ids.length;
-        }
-      } catch (conflictErr) {
-        logger.warn('[ClubAI Auto-Correct] Could not check/deactivate conflicts:', conflictErr);
-      }
-    }
-
-    // 5c: Log to clubai_corrections audit table
+    // 5b: Log to clubai_corrections audit table
     try {
       await db.query(`
         INSERT INTO clubai_corrections
@@ -846,10 +829,9 @@ Return JSON only: {"isCorrection": true/false, "correctedInfo": "brief descripti
       logger.warn('[ClubAI Auto-Correct] Failed to log correction audit:', auditErr);
     }
 
-    logger.info('[ClubAI Auto-Correct] Successfully learned correction', {
+    logger.info('[ClubAI Auto-Correct] Successfully learned correction (additive, no deactivation)', {
       phoneNumber,
       knowledgeEntryId,
-      deactivatedCount,
       intent: resolvedIntent,
     });
 

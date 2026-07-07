@@ -169,12 +169,22 @@ export async function getRAGContext(customerMessage: string): Promise<{
     searchKnowledgeWithEmbedding(queryEmbedding, { limit: 5, threshold: 0.45, sourceType: 'manual' }),
   ]);
 
+  // Auto-corrections are stored as 'manual' but at lower confidence (<0.9). Because
+  // they're classified autonomously (no human review), hold them to a STRICTER
+  // similarity bar than operator-curated corrections (>=0.9) before letting them
+  // override other answers — a single misclassified or conversation-specific
+  // correction must not dominate a loosely-related question from another customer.
+  const AUTO_CORRECTION_MIN_SIMILARITY = 0.6;
+  const manualFiltered = manual.filter(m =>
+    m.confidence_score >= 0.9 || m.similarity >= AUTO_CORRECTION_MIN_SIMILARITY
+  );
+
   // Format manual corrections FIRST. These override everything else.
   // They go into conversationExamples with a PRIORITY label so the AI knows to trust them.
   let conversationExamples = '';
-  if (manual.length > 0) {
+  if (manualFiltered.length > 0) {
     conversationExamples += 'VERIFIED CORRECTIONS FROM THE TEAM (USE THESE OVER ANY OTHER INFORMATION):\n\n';
-    for (const entry of manual) {
+    for (const entry of manualFiltered) {
       if (entry.customer_message) {
         conversationExamples += `Customer: "${entry.customer_message}"\n`;
       }
@@ -207,8 +217,8 @@ export async function getRAGContext(customerMessage: string): Promise<{
     }
   }
 
-  // Collect IDs and scores for logging
-  const allMatches = [...conversations, ...website, ...manual];
+  // Collect IDs and scores for logging (use the filtered manual set actually shown)
+  const allMatches = [...conversations, ...website, ...manualFiltered];
   const knowledgeIds = allMatches.map(m => m.knowledge_id);
   const similarityScores = allMatches.map(m => m.similarity);
 
@@ -225,7 +235,7 @@ export async function getRAGContext(customerMessage: string): Promise<{
     }
   }
 
-  return { conversationExamples, websiteContent, knowledgeIds, similarityScores, hasManualMatches: manual.length > 0, hasWebsiteMatches: website.length > 0 };
+  return { conversationExamples, websiteContent, knowledgeIds, similarityScores, hasManualMatches: manualFiltered.length > 0, hasWebsiteMatches: website.length > 0 };
 }
 
 // ============================================
@@ -318,8 +328,12 @@ export async function addManualKnowledge(
   intent: string,
   customerQuestion: string,
   teamResponse: string,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>,
+  confidence: number = 0.95
 ): Promise<number | null> {
+  // confidence defaults to 0.95 for operator-curated entries. Auto-corrections pass a
+  // lower value so getRAGContext can hold them to a stricter similarity bar (they are
+  // classified autonomously and must not override curated knowledge as freely).
   const embeddingText = `Customer: ${customerQuestion}\nResponse: ${teamResponse}`;
   const embedding = await generateEmbedding(embeddingText);
 
@@ -328,7 +342,7 @@ export async function addManualKnowledge(
       INSERT INTO clubai_knowledge
         (source_type, intent, customer_message, team_response, metadata, embedding, embedding_generated_at, confidence_score)
       VALUES
-        ('manual', $1, $2, $3, $4, $5, NOW(), 0.95)
+        ('manual', $1, $2, $3, $4, $5, NOW(), $6)
       RETURNING id
     `, [
       intent,
@@ -336,6 +350,7 @@ export async function addManualKnowledge(
       teamResponse,
       JSON.stringify(metadata || {}),
       embedding,
+      confidence,
     ]);
 
     return result.rows[0]?.id || null;
