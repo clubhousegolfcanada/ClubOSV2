@@ -5,6 +5,11 @@
 
 > Verification note: an automated multi-agent verification pass was interrupted by a monthly spend limit. All **critical** and **high** findings below were then re-verified by hand against the live source (file:line quoted). Medium findings are auditor-reported; a representative sample was hand-verified.
 
+> **Remediation status (updated 2026-07-07):**
+> - ✅ **Shipped in v1.35.11:** C1, C2, C3 (all three criticals).
+> - ✅ **Shipped in v1.35.12:** H1, H2, H4, H10, H11, H14.
+> - ⬜ **Still open:** H3, H5, H6, H7, H8, H9, H12, H13, H15, H16, H17 + the medium batch.
+
 ---
 
 ## Health scorecard
